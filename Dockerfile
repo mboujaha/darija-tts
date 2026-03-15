@@ -25,6 +25,7 @@ RUN pip install --no-cache-dir \
     yt-dlp \
     soundfile noisereduce pyloudnorm \
     faster-whisper \
+    silero-vad \
     && pip install --no-cache-dir \
     paramiko cryptography
 
