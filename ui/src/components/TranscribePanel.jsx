@@ -88,18 +88,28 @@ function JobCard({ job, logs, onCancel }) {
   )
 }
 
-function ReviewRow({ item, onApprove, onReject, onCorrect }) {
+function ReviewRow({ item, onApprove, onReject, onCorrect, onRetry,
+                     isRetrying, retryFlash, focused, onFocus, registerAudio }) {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(item.text || '')
-  const [pending, setPending] = useState(null) // 'approving' | 'rejecting' | 'correcting'
-  const [flash, setFlash] = useState(null)     // 'approved' | 'corrected' | 'rejected'
+  const [pending, setPending] = useState(null)
+  const [flash, setFlash] = useState(null)
   const [looping, setLooping] = useState(false)
+  const [showRetryPopover, setShowRetryPopover] = useState(false)
+  const [retryModel, setRetryModel] = useState('large-v3')
+  const [retryError, setRetryError] = useState(null)
+  const [retryPending, setRetryPending] = useState(false)
   const audioRef = useRef(null)
 
   const triggerFlash = (type) => {
     setFlash(type)
     setTimeout(() => setFlash(null), 1200)
   }
+
+  useEffect(() => {
+    if (retryFlash === 'success') triggerFlash('approved')
+    else if (retryFlash === 'failed') triggerFlash('rejected')
+  }, [retryFlash])
 
   const saveEditIfNeeded = async () => {
     if (editing && editText.trim() && editText.trim() !== item.text) {
@@ -134,9 +144,24 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
     setEditing(false)
   }
 
+  const handleRetrySubmit = async () => {
+    setRetryPending(true)
+    setRetryError(null)
+    const result = await onRetry(item.id, retryModel)
+    setRetryPending(false)
+    if (result.ok) {
+      setShowRetryPopover(false)
+    } else {
+      setRetryError(result.error)
+    }
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSave()
-    if (e.key === 'Escape') { setEditing(false); setEditText(item.text || '') }
+    if (e.key === 'Escape') {
+      if (showRetryPopover) { setShowRetryPopover(false); return }
+      setEditing(false); setEditText(item.text || '')
+    }
   }
 
   const audioUrl = `/api/audio/processed/${item.dialect}/${item.id}.wav`
@@ -147,7 +172,15 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
     : ''
 
   return (
-    <tr className={`border-b border-zinc-700 transition-colors duration-300 ${flashCls || 'hover:bg-zinc-800/50'}`}>
+    <tr
+      onClick={onFocus}
+      className={`border-b border-zinc-700 transition-colors duration-300 cursor-pointer ${
+        flashCls ? flashCls
+        : focused ? 'border-l-2 border-l-emerald-500 bg-zinc-800/80'
+        : isRetrying ? 'bg-zinc-800/30'
+        : 'hover:bg-zinc-800/50'
+      }`}
+    >
       <td className="px-3 py-2">
         <span className="text-xs px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 capitalize">
           {item.dialect}
@@ -155,10 +188,13 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
       </td>
       <td className="px-3 py-2">
         <div className="flex items-center gap-1.5">
-          <audio ref={audioRef} controls src={audioUrl} className="h-7 w-36" preload="none" loop={looping} />
+          <audio
+            ref={el => { audioRef.current = el; registerAudio?.(el) }}
+            controls src={audioUrl} className="h-7 w-36" preload="none" loop={looping}
+          />
           <button
             title={looping ? 'Loop on' : 'Loop off'}
-            onClick={() => setLooping(l => !l)}
+            onClick={e => { e.stopPropagation(); setLooping(l => !l) }}
             className={`flex-shrink-0 w-6 h-6 rounded flex items-center justify-center text-xs transition-colors ${
               looping ? 'bg-emerald-700 text-white' : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'
             }`}
@@ -167,7 +203,7 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
           </button>
         </div>
       </td>
-      <td className="px-3 py-2 max-w-xs">
+      <td className={`px-3 py-2 max-w-xs ${isRetrying ? 'opacity-50 animate-pulse' : ''}`}>
         {editing ? (
           <input
             dir="rtl"
@@ -209,51 +245,75 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
           </span>
         )}
       </td>
-      <td className="px-3 py-2">
-        {editing ? (
+      <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
+        {isRetrying ? (
+          <div className="flex items-center gap-1 text-zinc-400 text-xs">
+            <svg className="animate-spin h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            <span>Retrying…</span>
+          </div>
+        ) : editing ? (
           <div className="flex gap-1">
-            <button
-              onClick={handleSave}
-              disabled={!!pending}
-              title="Save correction"
-              className="text-xs px-2 py-1 bg-emerald-900/40 hover:bg-emerald-700/50 text-emerald-400 rounded transition-colors disabled:opacity-50"
-            >
+            <button onClick={handleSave} disabled={!!pending} title="Save correction"
+              className="text-xs px-2 py-1 bg-emerald-900/40 hover:bg-emerald-700/50 text-emerald-400 rounded transition-colors disabled:opacity-50">
               {pending === 'correcting' ? '…' : 'Save'}
             </button>
-            <button
-              onClick={() => { setEditing(false); setEditText(item.text || '') }}
-              title="Cancel"
-              className="text-xs px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded transition-colors"
-            >
+            <button onClick={() => { setEditing(false); setEditText(item.text || '') }} title="Cancel"
+              className="text-xs px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded transition-colors">
               Cancel
             </button>
           </div>
         ) : (
-          <div className="flex gap-1">
-            <button
-              onClick={handleApproveClick}
-              disabled={!!pending}
-              title="Approve"
-              className="text-xs px-2 py-1 bg-emerald-900/40 hover:bg-emerald-700/50 text-emerald-400 rounded transition-colors disabled:opacity-50 min-w-[28px]"
-            >
+          <div className="flex gap-1 relative">
+            <button onClick={handleApproveClick} disabled={!!pending} title="Approve"
+              className="text-xs px-2 py-1 bg-emerald-900/40 hover:bg-emerald-700/50 text-emerald-400 rounded transition-colors disabled:opacity-50 min-w-[28px]">
               {pending === 'approving' ? '…' : '✓'}
             </button>
-            <button
-              onClick={() => setEditing(true)}
-              disabled={!!pending}
-              title="Edit text"
-              className="text-xs px-2 py-1 bg-blue-900/40 hover:bg-blue-700/50 text-blue-400 rounded transition-colors disabled:opacity-50"
-            >
+            <button onClick={() => { setEditing(true); setShowRetryPopover(false) }}
+              disabled={!!pending} title="Edit text"
+              className="text-xs px-2 py-1 bg-blue-900/40 hover:bg-blue-700/50 text-blue-400 rounded transition-colors disabled:opacity-50">
               ✏
             </button>
             <button
-              onClick={handleRejectClick}
-              disabled={!!pending}
-              title="Reject"
-              className="text-xs px-2 py-1 bg-red-900/40 hover:bg-red-700/50 text-red-400 rounded transition-colors disabled:opacity-50 min-w-[28px]"
-            >
+              onClick={() => { setShowRetryPopover(p => !p); setEditing(false); setRetryError(null) }}
+              disabled={!!pending} title="Retry transcription"
+              className={`text-xs px-2 py-1 rounded transition-colors disabled:opacity-50 ${
+                showRetryPopover ? 'bg-amber-700/50 text-amber-300' : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+              }`}>
+              ↺
+            </button>
+            <button onClick={handleRejectClick} disabled={!!pending} title="Reject"
+              className="text-xs px-2 py-1 bg-red-900/40 hover:bg-red-700/50 text-red-400 rounded transition-colors disabled:opacity-50 min-w-[28px]">
               {pending === 'rejecting' ? '…' : '✗'}
             </button>
+
+            {showRetryPopover && (
+              <div className="absolute right-0 top-8 z-10 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl p-3 w-48">
+                <p className="text-xs font-medium text-zinc-300 mb-2">Retry with model:</p>
+                <select
+                  value={retryModel}
+                  onChange={e => setRetryModel(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-600 rounded px-2 py-1 text-xs text-zinc-100 mb-2 focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="large-v3">large-v3</option>
+                  <option value="medium">medium</option>
+                  <option value="small">small</option>
+                </select>
+                {retryError && <p className="text-xs text-red-400 mb-2">{retryError}</p>}
+                <div className="flex gap-1">
+                  <button onClick={handleRetrySubmit} disabled={retryPending}
+                    className="flex-1 text-xs px-2 py-1 bg-amber-700/50 hover:bg-amber-600/60 text-amber-200 rounded transition-colors disabled:opacity-50">
+                    {retryPending ? '…' : 'Retry'}
+                  </button>
+                  <button onClick={() => setShowRetryPopover(false)}
+                    className="text-xs px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded transition-colors">
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </td>
@@ -280,12 +340,72 @@ export default function TranscribePanel() {
   const [savedCount, setSavedCount] = useState(0)
   const REVIEW_LIMIT = 50
 
+  // Retry state
+  const retryingClipsRef = useRef(new Map()) // Map<clip_id, {jobId, timeoutId}>
+  const [retryingSet, setRetryingSet] = useState(new Set())
+  const [retryFlashes, setRetryFlashes] = useState({})
+  const unhandledRetryEventsRef = useRef([])
+
+  // Keyboard focus
+  const [focusedClipId, setFocusedClipId] = useState(null)
+  const audioRefsMap = useRef({})
+
+  // Shortcuts hint
+  const [shortcutsHidden, setShortcutsHidden] = useState(
+    () => localStorage.getItem('darija-tts:transcribe_shortcuts_dismissed') === '1'
+  )
+
   const wsRef = useRef(null)
+
+  const triggerRetryFlash = (clipId, type) => {
+    setRetryFlashes(prev => ({ ...prev, [clipId]: type }))
+    setTimeout(() => setRetryFlashes(prev => { const n = { ...prev }; delete n[clipId]; return n }), 1200)
+  }
+
+  const handleClipDoneEvent = (msg) => {
+    const clipId = [...retryingClipsRef.current.entries()].find(([, v]) => v.jobId === msg.job_id)?.[0]
+    if (!clipId) return
+    removeRetrying(clipId)
+    if (!msg.failed) {
+      triggerRetryFlash(clipId, 'success')
+      setReviewItems(prev => prev.map(i =>
+        i.id === clipId ? { ...i, text: msg.text, confidence: msg.confidence, status: msg.status } : i
+      ))
+    } else {
+      triggerRetryFlash(clipId, 'failed')
+    }
+  }
+
+  const addRetrying = (clipId, jobId) => {
+    const timeoutId = setTimeout(() => removeRetrying(clipId, true), 5 * 60 * 1000)
+    retryingClipsRef.current.set(clipId, { jobId, timeoutId })
+    setRetryingSet(prev => new Set([...prev, clipId]))
+    const buffered = unhandledRetryEventsRef.current.filter(e => e.job_id === jobId)
+    unhandledRetryEventsRef.current = unhandledRetryEventsRef.current.filter(e => e.job_id !== jobId)
+    buffered.forEach(handleClipDoneEvent)
+  }
+
+  const removeRetrying = (clipId, timedOut = false) => {
+    const entry = retryingClipsRef.current.get(clipId)
+    if (!entry) return
+    clearTimeout(entry.timeoutId)
+    retryingClipsRef.current.delete(clipId)
+    setRetryingSet(prev => { const s = new Set(prev); s.delete(clipId); return s })
+    if (timedOut) triggerRetryFlash(clipId, 'failed')
+  }
 
   const loadJobs = async () => {
     try {
       const r = await api.get('/transcribe/jobs')
       setJobs(r.data.jobs)
+      ;(r.data.jobs || []).forEach(job => {
+        if (['running', 'queued'].includes(job.status)) {
+          const cfg = typeof job.config === 'string' ? JSON.parse(job.config) : job.config
+          if (cfg?.is_retry && cfg?.clip_ids?.length === 1) {
+            addRetrying(cfg.clip_ids[0], job.id)
+          }
+        }
+      })
     } catch (e) {}
   }
 
@@ -339,6 +459,13 @@ export default function TranscribePanel() {
             const next = [...existing, msg.line].slice(-MAX_LOG_LINES)
             return { ...prev, [msg.job_id]: next }
           })
+        } else if (msg.type === 'transcribe_clip_done') {
+          const isKnown = [...retryingClipsRef.current.values()].some(v => v.jobId === msg.job_id)
+          if (isKnown) {
+            handleClipDoneEvent(msg)
+          } else {
+            unhandledRetryEventsRef.current.push(msg)
+          }
         }
       } catch (e) {}
     }
@@ -400,7 +527,47 @@ export default function TranscribePanel() {
     setSavedCount(prev => prev + 1)
   }
 
+  const handleRetry = async (clipId, model) => {
+    try {
+      const r = await api.post('/transcribe/retry-clip', { clip_id: clipId, model })
+      addRetrying(clipId, r.data.job_id)
+      setJobs(prev => [{ id: r.data.job_id, status: 'queued', progress: 0, message: 'Queued (retry)' }, ...prev])
+      return { ok: true }
+    } catch (e) {
+      if (e.response?.status === 409) return { error: 'Already retrying' }
+      return { error: 'Server error' }
+    }
+  }
+
   const STATUS_TABS = ['all', 'needs_review', 'corrected', 'approved', 'rejected']
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      const ids = reviewItems.map(i => i.id)
+      const idx = focusedClipId ? ids.indexOf(focusedClipId) : -1
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        setFocusedClipId(ids[Math.min(idx + 1, ids.length - 1)] ?? ids[0])
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        setFocusedClipId(ids[Math.max(idx - 1, 0)] ?? ids[0])
+      } else if (e.key === ' ') {
+        e.preventDefault()
+        if (focusedClipId) {
+          const audio = audioRefsMap.current[focusedClipId]
+          if (audio) audio.paused ? audio.play() : audio.pause()
+        }
+      } else if (e.key === 'a' && focusedClipId && !retryingSet.has(focusedClipId)) {
+        handleApprove(focusedClipId)
+      } else if (e.key === 'r' && focusedClipId && !retryingSet.has(focusedClipId)) {
+        handleReject(focusedClipId)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [reviewItems, focusedClipId, retryingSet])
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -560,6 +727,12 @@ export default function TranscribePanel() {
                       onApprove={handleApprove}
                       onReject={handleReject}
                       onCorrect={handleCorrect}
+                      onRetry={handleRetry}
+                      isRetrying={retryingSet.has(item.id)}
+                      retryFlash={retryFlashes[item.id]}
+                      focused={focusedClipId === item.id}
+                      onFocus={() => setFocusedClipId(item.id)}
+                      registerAudio={(el) => { if (el) audioRefsMap.current[item.id] = el; else delete audioRefsMap.current[item.id] }}
                     />
                   ))}
                 </tbody>
@@ -588,6 +761,16 @@ export default function TranscribePanel() {
                 </button>
               </div>
             </div>
+
+            {!shortcutsHidden && (
+              <div className="mt-2 flex items-center justify-between px-3 py-1.5 bg-zinc-800/60 border border-zinc-700 rounded text-xs text-zinc-500">
+                <span>j/k navigate · Space play · a approve · r reject</span>
+                <button
+                  onClick={() => { setShortcutsHidden(true); localStorage.setItem('darija-tts:transcribe_shortcuts_dismissed', '1') }}
+                  className="ml-3 text-zinc-600 hover:text-zinc-400 transition-colors"
+                >✕</button>
+              </div>
+            )}
           </>
         )}
       </div>
