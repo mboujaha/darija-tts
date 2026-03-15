@@ -2,6 +2,14 @@ import asyncio
 import re
 from pathlib import Path
 
+COOKIES_FILE = "/app/cookies.txt"
+
+
+def _cookies_args() -> list[str]:
+    if Path(COOKIES_FILE).exists():
+        return ["--cookies", COOKIES_FILE]
+    return []
+
 
 class DownloadError(Exception):
     pass
@@ -32,7 +40,8 @@ def extract_video_id(url: str) -> str | None:
 
 async def list_videos(url: str, max_videos: int) -> list[str]:
     proc = await asyncio.create_subprocess_exec(
-        "yt-dlp", "--flat-playlist", "--print", "url", "--playlist-end", str(max_videos), url,
+        "yt-dlp", "--flat-playlist", "--print", "url", "--playlist-end", str(max_videos),
+        *_cookies_args(), url,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -55,6 +64,7 @@ async def download_video(url: str, output_dir: Path, video_id: str) -> tuple[Pat
         "-o", output_template,
         "--no-playlist",
         "--age-limit", "99",
+        *_cookies_args(),
         url,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -64,6 +74,8 @@ async def download_video(url: str, output_dir: Path, video_id: str) -> tuple[Pat
 
     if proc.returncode != 0:
         lower = combined.lower()
+        if "sign in to confirm" in lower or "cookies" in lower:
+            raise AgeRestrictedError(f"Auth required (add cookies.txt): {video_id}")
         if "age" in lower and ("restrict" in lower or "confirm" in lower):
             raise AgeRestrictedError(f"Age restricted: {video_id}")
         if "geo" in lower or "not available in your country" in lower or "blocked" in lower:

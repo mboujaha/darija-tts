@@ -10,6 +10,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./server:/app/server   # live reload in dev
+      - ./cookies.txt:/app/cookies.txt:ro  # optional: YouTube auth cookies
     environment:
       - DATA_DIR=/app/data
       - CHECKPOINTS_DIR=/app/data/checkpoints
