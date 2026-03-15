@@ -309,6 +309,44 @@ async def get_downloaded_videos(dialect: str = None) -> list:
     return [dict(r) for r in rows]
 
 
+async def get_all_downloaded_videos(
+    dialect: str = None,
+    status: str = None,
+    limit: int = 200,
+) -> list:
+    conditions = []
+    params: list = []
+    if dialect:
+        conditions.append("dialect = ?")
+        params.append(dialect)
+    if status and status != "all":
+        conditions.append("status = ?")
+        params.append(status)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    params.append(limit)
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"SELECT * FROM downloaded_videos {where} ORDER BY downloaded_at DESC LIMIT ?",
+            params,
+        ) as cur:
+            rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def delete_failed_videos(dialect: str = None) -> int:
+    conditions = ["status != 'ok'"]
+    params: list = []
+    if dialect:
+        conditions.append("dialect = ?")
+        params.append(dialect)
+    where = "WHERE " + " AND ".join(conditions)
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute(f"DELETE FROM downloaded_videos {where}", params)
+        await db.commit()
+        return cur.rowcount
+
+
 async def clip_exists(clip_id: str) -> bool:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT 1 FROM clips WHERE id = ?", (clip_id,)) as cur:

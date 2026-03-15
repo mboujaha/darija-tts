@@ -2,7 +2,9 @@ import asyncio
 import re
 from pathlib import Path
 
-COOKIES_FILE = "/app/cookies.txt"
+from server.config import DATA_DIR
+
+COOKIES_FILE = str(Path(DATA_DIR) / "cookies.txt")
 
 
 def _cookies_args() -> list[str]:
@@ -74,8 +76,8 @@ async def download_video(url: str, output_dir: Path, video_id: str) -> tuple[Pat
 
     if proc.returncode != 0:
         lower = combined.lower()
-        if "sign in to confirm" in lower or "cookies" in lower:
-            raise AgeRestrictedError(f"Auth required (add cookies.txt): {video_id}")
+        if "sign in to confirm" in lower or ("cookies" in lower and "authentication" in lower):
+            raise AgeRestrictedError("YouTube auth required — upload cookies.txt in the Scrape panel")
         if "age" in lower and ("restrict" in lower or "confirm" in lower):
             raise AgeRestrictedError(f"Age restricted: {video_id}")
         if "geo" in lower or "not available in your country" in lower or "blocked" in lower:

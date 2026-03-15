@@ -1,9 +1,9 @@
 import asyncio
 import uuid
-from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from server import db
@@ -54,3 +54,45 @@ async def cancel_scrape(job_id: str):
 async def get_scrape_stats():
     stats = await db.get_download_stats()
     return {"stats": stats}
+
+
+@router.get("/cookies-status")
+async def get_cookies_status():
+    from server.services.scraper import COOKIES_FILE
+    present = Path(COOKIES_FILE).exists()
+    valid = False
+    if present:
+        proc = await asyncio.create_subprocess_exec(
+            "yt-dlp", "--simulate", "--quiet",
+            "--cookies", COOKIES_FILE,
+            "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, _ = await proc.communicate()
+        valid = proc.returncode == 0
+    return {"present": present, "valid": valid}
+
+
+@router.post("/upload-cookies")
+async def upload_cookies(file: UploadFile = File(...)):
+    from server.services.scraper import COOKIES_FILE
+    content = await file.read()
+    Path(COOKIES_FILE).write_bytes(content)
+    return {"ok": True, "bytes": len(content)}
+
+
+@router.get("/videos")
+async def list_downloaded_videos(
+    dialect: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 200,
+):
+    videos = await db.get_all_downloaded_videos(dialect=dialect, status=status, limit=limit)
+    return {"videos": videos}
+
+
+@router.post("/clear-failed")
+async def clear_failed_videos(dialect: Optional[str] = None):
+    deleted = await db.delete_failed_videos(dialect=dialect)
+    return {"deleted": deleted}
