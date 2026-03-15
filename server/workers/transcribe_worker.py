@@ -1,5 +1,7 @@
 import asyncio
+import functools
 import logging
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 
 from server import db
@@ -9,6 +11,11 @@ from server.ws import ws_manager
 logger = logging.getLogger(__name__)
 
 _cancel_flags: dict[str, bool] = {}
+
+# Use a separate process so transcription (CTranslate2) doesn't hold the GIL
+# and freeze the asyncio event loop / HTTP server.
+# max_workers=1 keeps a single persistent child process, reusing the loaded model.
+_transcribe_pool = ProcessPoolExecutor(max_workers=1)
 
 
 def request_cancel(job_id: str):
@@ -71,8 +78,8 @@ async def run_transcribe_job(job_id: str, dialect: str | None, config: dict):
 
             try:
                 result = await loop.run_in_executor(
-                    None,
-                    lambda p=file_path: transcribe_clip(p, model_size, min_confidence),
+                    _transcribe_pool,
+                    functools.partial(transcribe_clip, file_path, model_size, min_confidence),
                 )
             except Exception as e:
                 await _broadcast_log(job_id, f"ERROR {clip_id}: {e}")
