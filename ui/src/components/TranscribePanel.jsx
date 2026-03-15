@@ -93,6 +93,8 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
   const [editText, setEditText] = useState(item.text || '')
   const [pending, setPending] = useState(null) // 'approving' | 'rejecting' | 'correcting'
   const [flash, setFlash] = useState(null)     // 'approved' | 'corrected' | 'rejected'
+  const [looping, setLooping] = useState(false)
+  const audioRef = useRef(null)
 
   const triggerFlash = (type) => {
     setFlash(type)
@@ -152,7 +154,18 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
         </span>
       </td>
       <td className="px-3 py-2">
-        <audio controls src={audioUrl} className="h-7 w-36" preload="none" />
+        <div className="flex items-center gap-1.5">
+          <audio ref={audioRef} controls src={audioUrl} className="h-7 w-36" preload="none" loop={looping} />
+          <button
+            title={looping ? 'Loop on' : 'Loop off'}
+            onClick={() => setLooping(l => !l)}
+            className={`flex-shrink-0 w-6 h-6 rounded flex items-center justify-center text-xs transition-colors ${
+              looping ? 'bg-emerald-700 text-white' : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'
+            }`}
+          >
+            ↻
+          </button>
+        </div>
       </td>
       <td className="px-3 py-2 max-w-xs">
         {editing ? (
