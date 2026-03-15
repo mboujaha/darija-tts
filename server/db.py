@@ -259,7 +259,7 @@ async def update_source(source_id: int, **kwargs):
 async def is_video_downloaded(video_id: str, dialect: str) -> bool:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
-            "SELECT 1 FROM downloaded_videos WHERE video_id = ? AND dialect = ?",
+            "SELECT 1 FROM downloaded_videos WHERE video_id = ? AND dialect = ? AND status = 'ok'",
             (video_id, dialect),
         ) as cur:
             row = await cur.fetchone()
