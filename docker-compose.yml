@@ -33,8 +33,7 @@ services:
     volumes:
       - ./ui/src:/app/src             # live reload in dev
       - ./ui/vite.config.js:/app/vite.config.js  # config changes without rebuild
-    environment:
-      - VITE_API_BASE_URL=https://fm-api.cosumar.app/api
-      - VITE_WS_JOBS_URL=wss://fm-api.cosumar.app/ws/jobs
+    # No VITE_* overrides — browser uses relative /api and /ws paths,
+    # Vite proxies them to the backend container over the internal Docker network.
     depends_on:
       - backend
