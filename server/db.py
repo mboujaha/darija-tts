@@ -416,6 +416,50 @@ async def transcription_exists(clip_id: str) -> bool:
     return row is not None
 
 
+async def get_clip(clip_id: str) -> Optional[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT id, file_path, dialect, status FROM clips WHERE id = ?", (clip_id,)
+        ) as cur:
+            row = await cur.fetchone()
+    return dict(row) if row else None
+
+
+async def get_clips_by_ids(clip_ids: list[str]) -> list[dict]:
+    """Fetch clips by explicit IDs with no status filter — used for retry jobs."""
+    if not clip_ids:
+        return []
+    placeholders = ",".join("?" * len(clip_ids))
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"SELECT id, file_path, dialect FROM clips WHERE id IN ({placeholders})",
+            clip_ids,
+        ) as cur:
+            rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def upsert_transcription(clip_id: str, text: str, confidence: float) -> None:
+    """Create or overwrite a transcription, resetting corrected state."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO transcriptions (clip_id, text, confidence, is_corrected, corrected_by, updated_at)
+            VALUES (?, ?, ?, 0, NULL, ?)
+            ON CONFLICT(clip_id) DO UPDATE SET
+                text       = excluded.text,
+                confidence = excluded.confidence,
+                is_corrected = 0,
+                corrected_by = NULL,
+                updated_at = excluded.updated_at
+            """,
+            (clip_id, text, confidence, datetime.utcnow().isoformat()),
+        )
+        await db.commit()
+
+
 async def create_transcription(clip_id: str, text: str, confidence: float) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(

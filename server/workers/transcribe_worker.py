@@ -26,14 +26,22 @@ async def run_transcribe_job(job_id: str, dialect: str | None, config: dict):
 
     model_size = config.get("model", "large-v3")
     min_confidence = config.get("min_confidence", 0.6)
+    clip_ids: list[str] | None = config.get("clip_ids")
+    is_retry: bool = config.get("is_retry", False)
 
     try:
-        clips = await db.get_clips_for_transcription(dialect)
+        if is_retry and clip_ids:
+            clips = await db.get_clips_by_ids(clip_ids)
+        else:
+            clips = await db.get_clips_for_transcription(dialect)
+
         if not clips:
-            await db.update_job(job_id, status="completed", progress=1.0,
-                                message="No processed clips found",
+            msg = "No clips found" if is_retry else "No processed clips found"
+            await db.update_job(job_id, status="completed", progress=1.0, message=msg,
                                 completed_at=datetime.utcnow().isoformat())
-            await _broadcast_job_update(job_id, "completed", 1.0, "No processed clips found")
+            await _broadcast_job_update(job_id, "completed", 1.0, msg)
+            if is_retry and clip_ids:
+                await _broadcast_clip_done(job_id, clip_ids[0], failed=True)
             return
 
         total = len(clips)
@@ -54,7 +62,7 @@ async def run_transcribe_job(job_id: str, dialect: str | None, config: dict):
             clip_id = clip["id"]
             file_path = clip["file_path"]
 
-            if await db.transcription_exists(clip_id):
+            if not is_retry and await db.transcription_exists(clip_id):
                 progress = round((i + 1) / total, 4)
                 msg = f"{i+1}/{total} — {total_ok} transcribed"
                 await db.update_job(job_id, status="running", progress=progress, message=msg)
@@ -68,6 +76,8 @@ async def run_transcribe_job(job_id: str, dialect: str | None, config: dict):
                 )
             except Exception as e:
                 await _broadcast_log(job_id, f"ERROR {clip_id}: {e}")
+                if is_retry:
+                    await _broadcast_clip_done(job_id, clip_id, failed=True)
                 progress = round((i + 1) / total, 4)
                 await db.update_job(job_id, status="running", progress=progress)
                 await _broadcast_job_update(job_id, "running", progress, f"{i+1}/{total} — {total_ok} transcribed")
@@ -76,13 +86,21 @@ async def run_transcribe_job(job_id: str, dialect: str | None, config: dict):
             if result is None:
                 total_rejected += 1
                 await _broadcast_log(job_id, f"REJECT {clip_id}: low confidence or invalid text")
+                if is_retry:
+                    await _broadcast_clip_done(job_id, clip_id, failed=True)
             else:
                 text = result["text"]
                 confidence = result["confidence"]
-                await db.create_transcription(clip_id, text, confidence)
+                if is_retry:
+                    await db.upsert_transcription(clip_id, text, confidence)
+                else:
+                    await db.create_transcription(clip_id, text, confidence)
                 await db.update_clip_status(clip_id, "transcribed")
                 total_ok += 1
                 await _broadcast_log(job_id, f"OK {clip_id}: {confidence:.2f} — {text[:60]}")
+                if is_retry:
+                    await _broadcast_clip_done(job_id, clip_id, text=text,
+                                               confidence=confidence, status="transcribed")
 
             progress = round((i + 1) / total, 4)
             msg = f"{i+1}/{total} — {total_ok} transcribed"
@@ -100,6 +118,10 @@ async def run_transcribe_job(job_id: str, dialect: str | None, config: dict):
         await _broadcast_job_update(job_id, "failed", 0.0, f"Unexpected error: {e}")
     finally:
         _cancel_flags.pop(job_id, None)
+        if is_retry and clip_ids:
+            retry_clip_id = clip_ids[0]
+            from server.routes.transcribe import _retry_locks
+            _retry_locks.discard(retry_clip_id)
 
 
 async def _broadcast_job_update(job_id: str, status: str, progress: float, message: str):
@@ -110,6 +132,17 @@ async def _broadcast_job_update(job_id: str, status: str, progress: float, messa
         "progress": progress,
         "message": message,
     })
+
+
+async def _broadcast_clip_done(job_id: str, clip_id: str, *,
+                               failed: bool = False, text: str = "",
+                               confidence: float = 0.0, status: str = ""):
+    payload: dict = {"type": "transcribe_clip_done", "job_id": job_id, "clip_id": clip_id}
+    if failed:
+        payload["failed"] = True
+    else:
+        payload.update({"text": text, "confidence": confidence, "status": status})
+    await ws_manager.broadcast(payload)
 
 
 async def _broadcast_log(job_id: str, line: str):

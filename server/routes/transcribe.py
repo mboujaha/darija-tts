@@ -10,6 +10,8 @@ from server.workers.transcribe_worker import run_transcribe_job, request_cancel
 
 router = APIRouter(prefix="/api/transcribe", tags=["transcribe"])
 
+_retry_locks: set[str] = set()
+
 
 class TranscribeStart(BaseModel):
     dialect: Optional[str] = None
@@ -23,6 +25,12 @@ class CorrectText(BaseModel):
 
 class BulkApprove(BaseModel):
     clip_ids: List[str]
+
+
+class RetryClip(BaseModel):
+    clip_id: str
+    model: str = DEFAULT_WHISPER_MODEL
+    min_confidence: float = DEFAULT_MIN_CONFIDENCE
 
 
 @router.post("/start")
@@ -103,6 +111,31 @@ async def bulk_approve(body: BulkApprove):
     for clip_id in body.clip_ids:
         await db.update_clip_status(clip_id, "approved")
     return {"approved": len(body.clip_ids)}
+
+
+@router.post("/retry-clip")
+async def retry_clip(body: RetryClip, background_tasks: BackgroundTasks):
+    if body.clip_id in _retry_locks:
+        raise HTTPException(409, detail="retry already in progress")
+
+    _retry_locks.add(body.clip_id)
+    try:
+        clip = await db.get_clip(body.clip_id)
+        if clip is None:
+            raise HTTPException(404, detail="Clip not found")
+        job_id = f"retry-{uuid.uuid4().hex[:12]}"
+        config = {
+            "model": body.model,
+            "min_confidence": body.min_confidence,
+            "clip_ids": [body.clip_id],
+            "is_retry": True,
+        }
+        await db.create_job(job_id, job_type="transcribe", config=config)
+        background_tasks.add_task(run_transcribe_job, job_id, None, config)
+        return {"job_id": job_id}
+    except Exception:
+        _retry_locks.discard(body.clip_id)
+        raise
 
 
 @router.get("/stats")
