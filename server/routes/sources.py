@@ -26,7 +26,7 @@ class SourceUpdate(BaseModel):
     notes: Optional[str] = None
 
 
-@router.get("/")
+@router.get("")
 async def list_sources():
     all_sources = await db.get_sources()
     grouped = {d: [] for d in DIALECTS}
@@ -37,7 +37,7 @@ async def list_sources():
     return {"sources": grouped}
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 async def create_source(body: SourceCreate):
     if body.dialect not in DIALECTS:
         raise HTTPException(400, detail=f"Invalid dialect. Must be one of: {DIALECTS}")
