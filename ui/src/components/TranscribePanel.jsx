@@ -437,7 +437,7 @@ export default function TranscribePanel() {
     loadJobs()
     loadStats()
     loadReview(0)
-    const iv = setInterval(() => { loadStats(); loadReview(reviewOffset) }, 10000)
+    const iv = setInterval(() => { loadStats() }, 10000)
 
     const ws = new WebSocket(WS_URL)
     wsRef.current = ws
