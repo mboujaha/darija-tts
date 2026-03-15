@@ -29,6 +29,8 @@ RUN pip install --no-cache-dir \
     && pip install --no-cache-dir \
     paramiko cryptography \
     && pip install --no-cache-dir \
+    "transformers>=4.40.0,<5.0.0" \
+    && pip install --no-cache-dir \
     TTS peft tensorboard
 
 # Copy source
