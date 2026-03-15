@@ -8,8 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsndfile1 \
     build-essential \
-    nodejs \
+    curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Install deno (required by yt-dlp 2026+ for YouTube n-challenge solving)
+RUN curl -fsSL https://deno.land/install.sh | sh
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="${DENO_INSTALL}/bin:${PATH}"
 
 # Python deps — torch/torchaudio already in base image, skip them
 COPY requirements.txt .
