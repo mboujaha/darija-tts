@@ -7,15 +7,8 @@ export default defineConfig({
     port: 5173,
     allowedHosts: ['fm.cosumar.app', 'fm-api.cosumar.app'],
     proxy: {
-      '/api': {
-        target: 'http://backend:8000',
-        changeOrigin: true,
-      },
-      '/ws': {
-        target: 'ws://backend:8000',
-        ws: true,
-        changeOrigin: true,
-      },
+      '/api': { target: 'http://backend:8000' },
+      '/ws':  { target: 'ws://backend:8000', ws: true },
     },
   },
 })
