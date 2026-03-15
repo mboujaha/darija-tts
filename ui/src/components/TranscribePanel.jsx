@@ -89,7 +89,8 @@ function JobCard({ job, logs, onCancel }) {
 }
 
 function ReviewRow({ item, onApprove, onReject, onCorrect, onRetry,
-                     isRetrying, retryFlash, focused, onFocus, registerAudio }) {
+                     isRetrying, retryFlash, focused, onFocus, registerAudio,
+                     selected, onToggleSelect }) {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(item.text || '')
   const [pending, setPending] = useState(null)
@@ -181,6 +182,10 @@ function ReviewRow({ item, onApprove, onReject, onCorrect, onRetry,
         : 'hover:bg-zinc-800/50'
       }`}
     >
+      <td className="px-3 py-2 w-8" onClick={e => e.stopPropagation()}>
+        <input type="checkbox" checked={!!selected} onChange={onToggleSelect}
+          className="accent-emerald-500 cursor-pointer" />
+      </td>
       <td className="px-3 py-2">
         <span className="text-xs px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 capitalize">
           {item.dialect}
@@ -338,6 +343,7 @@ export default function TranscribePanel() {
   const [reviewTotal, setReviewTotal] = useState(0)
   const [reviewOffset, setReviewOffset] = useState(0)
   const [savedCount, setSavedCount] = useState(0)
+  const [selectedIds, setSelectedIds] = useState(new Set())
   const REVIEW_LIMIT = 50
 
   // Retry state
@@ -478,6 +484,7 @@ export default function TranscribePanel() {
 
   useEffect(() => {
     loadReview(0)
+    setSelectedIds(new Set())
   }, [reviewDialect, reviewStatus, confRange])
 
   const startTranscribe = async () => {
@@ -513,6 +520,30 @@ export default function TranscribePanel() {
   const handleApprove = async (clip_id) => {
     await api.post(`/transcribe/bulk-approve`, { clip_ids: [clip_id] })
     removeRowAfterDelay(clip_id)
+  }
+
+  const handleBulkApprove = async () => {
+    const ids = [...selectedIds]
+    if (!ids.length) return
+    await api.post(`/transcribe/bulk-approve`, { clip_ids: ids })
+    setSelectedIds(new Set())
+    ids.forEach(id => removeRowAfterDelay(id))
+  }
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === reviewItems.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(reviewItems.map(i => i.id)))
+    }
   }
 
   const handleReject = async (clip_id) => {
@@ -703,6 +734,24 @@ export default function TranscribePanel() {
           </div>
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2 bg-emerald-900/30 border border-emerald-700/50 rounded-lg text-sm">
+            <span className="text-emerald-300 font-medium">{selectedIds.size} selected</span>
+            <button
+              onClick={handleBulkApprove}
+              className="px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs transition-colors"
+            >
+              ✓ Approve all
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded text-xs transition-colors"
+            >
+              Clear selection
+            </button>
+          </div>
+        )}
+
         {reviewItems.length === 0 ? (
           <p className="text-sm text-zinc-500 py-4">No transcriptions to review.</p>
         ) : (
@@ -711,6 +760,13 @@ export default function TranscribePanel() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-zinc-400 bg-zinc-800 border-b border-zinc-700">
+                    <th className="px-3 py-2 w-8">
+                      <input type="checkbox"
+                        checked={reviewItems.length > 0 && selectedIds.size === reviewItems.length}
+                        onChange={toggleSelectAll}
+                        className="accent-emerald-500 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-3 py-2">Dialect</th>
                     <th className="px-3 py-2">Audio</th>
                     <th className="px-3 py-2 text-right">Text</th>
@@ -733,6 +789,8 @@ export default function TranscribePanel() {
                       focused={focusedClipId === item.id}
                       onFocus={() => setFocusedClipId(item.id)}
                       registerAudio={(el) => { if (el) audioRefsMap.current[item.id] = el; else delete audioRefsMap.current[item.id] }}
+                      selected={selectedIds.has(item.id)}
+                      onToggleSelect={() => toggleSelect(item.id)}
                     />
                   ))}
                 </tbody>
