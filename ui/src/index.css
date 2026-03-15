@@ -8,8 +8,8 @@
 
 body {
   margin: 0;
-  background-color: #0f172a;
-  color: #f1f5f9;
+  background-color: #09090b; /* zinc-950 — true neutral, no blue */
+  color: #fafafa;            /* zinc-50 */
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -25,14 +25,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #18181b; /* zinc-900 */
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #3f3f46; /* zinc-700 */
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #52525b; /* zinc-600 */
 }

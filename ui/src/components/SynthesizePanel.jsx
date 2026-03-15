@@ -36,13 +36,13 @@ function StreamPlayer({ chunks }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
-        <div className="flex-1 bg-slate-900 rounded-full h-1.5">
+        <div className="flex-1 bg-zinc-900 rounded-full h-1.5">
           <div
             className="h-1.5 rounded-full bg-emerald-500 transition-all"
             style={{ width: total > 0 ? `${(done / total) * 100}%` : '0%' }}
           />
         </div>
-        <span className="text-xs text-slate-400 flex-shrink-0">{done}/{total} chunks</span>
+        <span className="text-xs text-zinc-400 flex-shrink-0">{done}/{total} chunks</span>
         {errCount > 0 && <span className="text-xs text-red-400">{errCount} errors</span>}
       </div>
       <audio
@@ -53,7 +53,7 @@ function StreamPlayer({ chunks }) {
       />
       <div className="space-y-1 max-h-32 overflow-y-auto">
         {chunks.map((c, i) => (
-          <div key={i} className={`text-xs flex items-center gap-2 ${c.error ? 'text-red-400' : c.url ? 'text-emerald-400' : 'text-slate-500'}`}>
+          <div key={i} className={`text-xs flex items-center gap-2 ${c.error ? 'text-red-400' : c.url ? 'text-emerald-400' : 'text-zinc-500'}`}>
             <span className="w-4 text-right flex-shrink-0">{i + 1}.</span>
             <span
               dir="rtl"
@@ -257,11 +257,11 @@ export default function SynthesizePanel() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-100">Synthesize</h2>
+        <h2 className="text-xl font-semibold text-zinc-100">Synthesize</h2>
         <button
           onClick={unloadModel}
           title="Free model from GPU/CPU memory"
-          className="text-xs px-3 py-1.5 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+          className="text-xs px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
         >
           Unload Model
         </button>
@@ -271,28 +271,28 @@ export default function SynthesizePanel() {
         {/* ── Left: config + text input ── */}
         <div className="col-span-3 space-y-4">
           {/* Text input */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
+          <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-3">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Text to synthesize</label>
+              <label className="block text-xs font-medium text-zinc-400 mb-1">Text to synthesize</label>
               <textarea
                 dir="rtl"
                 value={text}
                 onChange={e => setText(e.target.value)}
                 rows={5}
                 placeholder="اكتب النص هنا…"
-                className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-slate-100 text-right placeholder-slate-600 focus:outline-none focus:border-emerald-500 resize-none"
+                className="w-full bg-zinc-900 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 text-right placeholder-zinc-600 focus:outline-none focus:border-emerald-500 resize-none"
                 style={{ fontFamily: "'Noto Sans Arabic', Arial, sans-serif", fontSize: '1.05rem', lineHeight: '1.8' }}
               />
-              <p className="text-xs text-slate-600 text-right mt-1">{text.length} chars</p>
+              <p className="text-xs text-zinc-600 text-right mt-1">{text.length} chars</p>
             </div>
 
             {/* Language */}
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Language</label>
+              <label className="block text-xs font-medium text-zinc-400 mb-1">Language</label>
               <select
                 value={language}
                 onChange={e => setLanguage(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-900 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
               >
                 {LANGUAGES.map(l => (
                   <option key={l.value} value={l.value}>{l.label}</option>
@@ -308,8 +308,8 @@ export default function SynthesizePanel() {
                 onChange={e => setStreamMode(e.target.checked)}
                 className="accent-emerald-500 w-4 h-4"
               />
-              <span className="text-sm text-slate-300">Stream mode</span>
-              <span className="text-xs text-slate-500">
+              <span className="text-sm text-zinc-300">Stream mode</span>
+              <span className="text-xs text-zinc-500">
                 (splits into sentences, plays each as it's ready)
               </span>
             </label>
@@ -336,7 +336,7 @@ export default function SynthesizePanel() {
 
           {/* Stream player */}
           {streamMode && streamChunks.length > 0 && (
-            <div className="bg-slate-800 border border-emerald-800/50 rounded-lg p-4 space-y-3">
+            <div className="bg-zinc-800 border border-emerald-800/50 rounded-lg p-4 space-y-3">
               <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
                 Streaming Output
               </p>
@@ -346,10 +346,10 @@ export default function SynthesizePanel() {
 
           {/* Single result player */}
           {!streamMode && result && (
-            <div className="bg-slate-800 border border-emerald-800/50 rounded-lg p-4 space-y-2">
+            <div className="bg-zinc-800 border border-emerald-800/50 rounded-lg p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Output</p>
-                <span className="text-xs text-slate-500 font-mono">{fmtDur(result.duration)}</span>
+                <span className="text-xs text-zinc-500 font-mono">{fmtDur(result.duration)}</span>
               </div>
               <audio
                 ref={audioRef}
@@ -360,12 +360,12 @@ export default function SynthesizePanel() {
               />
               <p
                 dir="rtl"
-                className="text-sm text-slate-300 text-right border-t border-slate-700 pt-2"
+                className="text-sm text-zinc-300 text-right border-t border-zinc-700 pt-2"
                 style={{ fontFamily: "'Noto Sans Arabic', Arial, sans-serif" }}
               >
                 {result.text}
               </p>
-              <div className="flex gap-3 text-xs text-slate-500">
+              <div className="flex gap-3 text-xs text-zinc-500">
                 <span>Speaker: {result.speaker_id}</span>
                 {result.checkpoint_used && result.checkpoint_used !== 'base' && (
                   <span className="truncate">Checkpoint: {result.checkpoint_used}</span>
@@ -378,10 +378,10 @@ export default function SynthesizePanel() {
         {/* ── Right: voice + model settings ── */}
         <div className="col-span-2 space-y-4">
           {/* Voice selector */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Voice</p>
+          <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-3">
+            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Voice</p>
             {voices.length === 0 ? (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-zinc-500">
                 No voices found. Build a dataset first to populate speaker_wavs.
               </p>
             ) : (
@@ -393,35 +393,35 @@ export default function SynthesizePanel() {
                     className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                       speakerId === v.id
                         ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/50'
-                        : 'bg-slate-900/50 text-slate-300 hover:bg-slate-700/50'
+                        : 'bg-zinc-900/50 text-zinc-300 hover:bg-zinc-700/50'
                     }`}
                   >
                     <span className="block font-medium truncate">{v.name}</span>
-                    <span className="text-xs text-slate-500 capitalize">{v.source}</span>
+                    <span className="text-xs text-zinc-500 capitalize">{v.source}</span>
                   </button>
                 ))}
               </div>
             )}
             <button
               onClick={loadVoices}
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
             >
               Refresh voices
             </button>
           </div>
 
           {/* Checkpoint */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-2">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Model</p>
+          <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-2">
+            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Model</p>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">
+              <label className="block text-xs text-zinc-500 mb-1">
                 Fine-tuned checkpoint{' '}
-                <span className="text-slate-600">(leave empty for base XTTS v2)</span>
+                <span className="text-zinc-600">(leave empty for base XTTS v2)</span>
               </label>
               <select
                 value={checkpointDir}
                 onChange={e => setCheckpointDir(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-900 border border-zinc-600 rounded px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
               >
                 <option value="">Base XTTS v2 (auto-download)</option>
                 {checkpoints.map(ck => (
@@ -434,40 +434,40 @@ export default function SynthesizePanel() {
           </div>
 
           {/* Generation params */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Parameters</p>
+          <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-3">
+            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Parameters</p>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">
-                Temperature: <span className="text-slate-200">{temperature}</span>
+              <label className="block text-xs text-zinc-400 mb-1">
+                Temperature: <span className="text-zinc-200">{temperature}</span>
               </label>
               <input
                 type="range" min={0.1} max={1.0} step={0.05} value={temperature}
                 onChange={e => setTemperature(Number(e.target.value))}
                 className="w-full accent-emerald-500"
               />
-              <div className="flex justify-between text-xs text-slate-600 mt-0.5">
+              <div className="flex justify-between text-xs text-zinc-600 mt-0.5">
                 <span>stable</span><span>creative</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">
-                Speed: <span className="text-slate-200">{speed.toFixed(2)}×</span>
+              <label className="block text-xs text-zinc-400 mb-1">
+                Speed: <span className="text-zinc-200">{speed.toFixed(2)}×</span>
               </label>
               <input
                 type="range" min={0.5} max={2.0} step={0.05} value={speed}
                 onChange={e => setSpeed(Number(e.target.value))}
                 className="w-full accent-emerald-500"
               />
-              <div className="flex justify-between text-xs text-slate-600 mt-0.5">
+              <div className="flex justify-between text-xs text-zinc-600 mt-0.5">
                 <span>slow</span><span>fast</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">
-                Reference length: <span className="text-slate-200">{gptCondLen}s</span>
+              <label className="block text-xs text-zinc-400 mb-1">
+                Reference length: <span className="text-zinc-200">{gptCondLen}s</span>
               </label>
               <input
                 type="range" min={3} max={12} step={1} value={gptCondLen}
@@ -482,33 +482,33 @@ export default function SynthesizePanel() {
       {/* Generation history */}
       {history.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">History</p>
-          <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">History</p>
+          <div className="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 bg-slate-800 border-b border-slate-700">
+                <tr className="text-left text-xs text-zinc-400 bg-zinc-800 border-b border-zinc-700">
                   <th className="px-3 py-2">Time</th>
                   <th className="px-3 py-2">Audio</th>
                   <th className="px-3 py-2">Duration</th>
                   <th className="px-3 py-2 w-8" />
                 </tr>
               </thead>
-              <tbody className="bg-slate-900/40 divide-y divide-slate-700">
+              <tbody className="bg-zinc-900/40 divide-y divide-zinc-700">
                 {history.map(item => (
-                  <tr key={item.filename} className="hover:bg-slate-800/50">
-                    <td className="px-3 py-2 text-xs text-slate-500 font-mono whitespace-nowrap">
+                  <tr key={item.filename} className="hover:bg-zinc-800/50">
+                    <td className="px-3 py-2 text-xs text-zinc-500 font-mono whitespace-nowrap">
                       {fmtTime(item.created_at)}
                     </td>
                     <td className="px-3 py-2">
                       <audio controls src={item.url} className="h-7 w-48" preload="none" />
                     </td>
-                    <td className="px-3 py-2 text-xs text-slate-400 font-mono">
+                    <td className="px-3 py-2 text-xs text-zinc-400 font-mono">
                       {fmtDur(item.duration)}
                     </td>
                     <td className="px-3 py-2">
                       <button
                         onClick={() => deleteGenerated(item.filename)}
-                        className="text-xs text-slate-600 hover:text-red-400 transition-colors"
+                        className="text-xs text-zinc-600 hover:text-red-400 transition-colors"
                         title="Delete"
                       >
                         ✕

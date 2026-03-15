@@ -15,24 +15,24 @@ const DEFAULT_SENTENCES = [
 
 const statusColors = {
   running:    'bg-emerald-500',
-  queued:     'bg-slate-500',
-  completed:  'bg-slate-600',
+  queued:     'bg-zinc-500',
+  completed:  'bg-zinc-600',
   failed:     'bg-red-600',
   cancelling: 'bg-yellow-500',
-  cancelled:  'bg-slate-600',
+  cancelled:  'bg-zinc-600',
 }
 
 const logLineCls = (line) => {
   if (line.startsWith('OK') || line.startsWith('DONE') || line.startsWith('INFO')) return 'text-emerald-400'
   if (line.startsWith('ERR') || line.startsWith('Error')) return 'text-red-400'
-  return 'text-slate-300'
+  return 'text-zinc-300'
 }
 
 // Metric badge — color by goodness direction
 function MetricBadge({ value, label, lowerBetter = false, good, warn }) {
-  if (value == null) return <span className="text-slate-600 text-xs">—</span>
+  if (value == null) return <span className="text-zinc-600 text-xs">—</span>
   const n = Number(value)
-  let cls = 'text-slate-300'
+  let cls = 'text-zinc-300'
   if (lowerBetter) {
     if (n <= good) cls = 'text-emerald-400'
     else if (n <= warn) cls = 'text-yellow-400'
@@ -60,15 +60,15 @@ function JobCard({ job, logs, onCancel }) {
   const canCancel = job.status === 'running' || job.status === 'queued'
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[job.status] || 'bg-slate-500'}`} />
-        <span className="text-sm font-mono text-slate-300 flex-1 truncate">{job.id}</span>
-        <span className="text-xs text-slate-500 capitalize">{job.status}</span>
+    <div className="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-700">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[job.status] || 'bg-zinc-500'}`} />
+        <span className="text-sm font-mono text-zinc-300 flex-1 truncate">{job.id}</span>
+        <span className="text-xs text-zinc-500 capitalize">{job.status}</span>
         {canCancel && (
           <button
             onClick={() => onCancel(job.id)}
-            className="text-xs px-2 py-1 bg-slate-700 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded transition-colors"
+            className="text-xs px-2 py-1 bg-zinc-700 hover:bg-red-900/40 text-zinc-400 hover:text-red-400 rounded transition-colors"
           >
             Cancel
           </button>
@@ -76,13 +76,13 @@ function JobCard({ job, logs, onCancel }) {
       </div>
 
       <div className="px-4 py-2">
-        <div className="flex justify-between text-xs text-slate-400 mb-1">
+        <div className="flex justify-between text-xs text-zinc-400 mb-1">
           <span>{job.message || '—'}</span>
           <span>{Math.round((job.progress || 0) * 100)}%</span>
         </div>
-        <div className="w-full bg-slate-900 rounded-full h-1.5">
+        <div className="w-full bg-zinc-900 rounded-full h-1.5">
           <div
-            className={`h-1.5 rounded-full transition-all ${statusColors[job.status] || 'bg-slate-500'}`}
+            className={`h-1.5 rounded-full transition-all ${statusColors[job.status] || 'bg-zinc-500'}`}
             style={{ width: `${Math.round((job.progress || 0) * 100)}%` }}
           />
         </div>
@@ -91,7 +91,7 @@ function JobCard({ job, logs, onCancel }) {
       {jobLogs.length > 0 && (
         <div
           ref={logRef}
-          className="px-4 py-2 max-h-40 overflow-y-auto bg-slate-900/60 font-mono text-xs space-y-0.5"
+          className="px-4 py-2 max-h-40 overflow-y-auto bg-zinc-900/60 font-mono text-xs space-y-0.5"
         >
           {jobLogs.map((line, i) => (
             <div key={i} className={logLineCls(line)}>{line}</div>
@@ -105,10 +105,10 @@ function JobCard({ job, logs, onCancel }) {
 function SpeakerSummaryTable({ summaries }) {
   if (!summaries || summaries.length === 0) return null
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-700">
+    <div className="overflow-x-auto rounded-lg border border-zinc-700">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs text-slate-400 bg-slate-800 border-b border-slate-700">
+          <tr className="text-left text-xs text-zinc-400 bg-zinc-800 border-b border-zinc-700">
             <th className="px-3 py-2">Speaker</th>
             <th className="px-3 py-2 text-center">Samples</th>
             <th className="px-3 py-2 text-center">MCD ↓</th>
@@ -118,16 +118,16 @@ function SpeakerSummaryTable({ summaries }) {
             <th className="px-3 py-2 text-center">Dur</th>
           </tr>
         </thead>
-        <tbody className="bg-slate-900/40 divide-y divide-slate-700">
+        <tbody className="bg-zinc-900/40 divide-y divide-zinc-700">
           {summaries.map(s => (
-            <tr key={s.speaker_id} className="hover:bg-slate-800/50">
+            <tr key={s.speaker_id} className="hover:bg-zinc-800/50">
               <td className="px-3 py-2">
                 <div>
-                  <p className="text-sm text-slate-200">{s.speaker_name}</p>
-                  <p className="text-xs text-slate-500 font-mono">{s.speaker_id}</p>
+                  <p className="text-sm text-zinc-200">{s.speaker_name}</p>
+                  <p className="text-xs text-zinc-500 font-mono">{s.speaker_id}</p>
                 </div>
               </td>
-              <td className="px-3 py-2 text-center text-xs text-slate-400">
+              <td className="px-3 py-2 text-center text-xs text-zinc-400">
                 {s.n_ok}/{s.n_samples}
               </td>
               <td className="px-3 py-2 text-center">
@@ -142,7 +142,7 @@ function SpeakerSummaryTable({ summaries }) {
               <td className="px-3 py-2 text-center">
                 <MetricBadge value={s.avg_rtf} label="RTF" lowerBetter good={0.3} warn={1.0} />
               </td>
-              <td className="px-3 py-2 text-center text-xs text-slate-400 font-mono">
+              <td className="px-3 py-2 text-center text-xs text-zinc-400 font-mono">
                 {s.avg_duration != null ? s.avg_duration.toFixed(1) + 's' : '—'}
               </td>
             </tr>
@@ -167,18 +167,18 @@ function ResultsTable({ results }) {
         <select
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+          className="bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
         >
           <option value="">All speakers</option>
           {speakers.map(sid => <option key={sid} value={sid}>{sid}</option>)}
         </select>
-        <span className="text-xs text-slate-500">{filtered.length} rows</span>
+        <span className="text-xs text-zinc-500">{filtered.length} rows</span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-700 max-h-96 overflow-y-auto">
+      <div className="overflow-x-auto rounded-lg border border-zinc-700 max-h-96 overflow-y-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 z-10">
-            <tr className="text-left text-slate-400 bg-slate-800 border-b border-slate-700">
+            <tr className="text-left text-zinc-400 bg-zinc-800 border-b border-zinc-700">
               <th className="px-3 py-2">Speaker</th>
               <th className="px-3 py-2">Audio</th>
               <th className="px-3 py-2 text-right">Sentence</th>
@@ -188,10 +188,10 @@ function ResultsTable({ results }) {
               <th className="px-3 py-2 text-center">RTF ↓</th>
             </tr>
           </thead>
-          <tbody className="bg-slate-900/40 divide-y divide-slate-700">
+          <tbody className="bg-zinc-900/40 divide-y divide-zinc-700">
             {filtered.map((r, i) => (
-              <tr key={i} className={`hover:bg-slate-800/50 ${r.error ? 'opacity-50' : ''}`}>
-                <td className="px-3 py-2 text-slate-400 font-mono whitespace-nowrap">
+              <tr key={i} className={`hover:bg-zinc-800/50 ${r.error ? 'opacity-50' : ''}`}>
+                <td className="px-3 py-2 text-zinc-400 font-mono whitespace-nowrap">
                   {r.speaker_id}
                 </td>
                 <td className="px-3 py-2">
@@ -204,7 +204,7 @@ function ResultsTable({ results }) {
                 <td className="px-3 py-2 max-w-xs text-right">
                   <span
                     dir="rtl"
-                    className="text-slate-300 block text-right"
+                    className="text-zinc-300 block text-right"
                     style={{ fontFamily: "'Noto Sans Arabic', Arial, sans-serif" }}
                   >
                     {r.sentence}
@@ -370,35 +370,35 @@ export default function EvaluatePanel() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-100">Evaluate</h2>
+        <h2 className="text-xl font-semibold text-zinc-100">Evaluate</h2>
       </div>
 
       <div className="grid grid-cols-5 gap-4">
         {/* ── Left: sentences + run ── */}
         <div className="col-span-3 space-y-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
+          <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-3">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">
-                Test sentences <span className="text-slate-600">(one per line)</span>
+              <label className="block text-xs font-medium text-zinc-400 mb-1">
+                Test sentences <span className="text-zinc-600">(one per line)</span>
               </label>
               <textarea
                 dir="rtl"
                 value={sentences}
                 onChange={e => setSentences(e.target.value)}
                 rows={8}
-                className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-slate-100 text-right placeholder-slate-600 focus:outline-none focus:border-emerald-500 resize-none font-mono"
+                className="w-full bg-zinc-900 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 text-right placeholder-zinc-600 focus:outline-none focus:border-emerald-500 resize-none font-mono"
                 style={{ fontFamily: "'Noto Sans Arabic', Arial, sans-serif" }}
               />
-              <p className="text-xs text-slate-600 text-right mt-0.5">{sentenceCount} sentences</p>
+              <p className="text-xs text-zinc-600 text-right mt-0.5">{sentenceCount} sentences</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Language</label>
+                <label className="block text-xs text-zinc-400 mb-1">Language</label>
                 <select
                   value={language}
                   onChange={e => setLanguage(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-900 border border-zinc-600 rounded px-2 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
                 >
                   <option value="ar">Arabic</option>
                   <option value="fr">French</option>
@@ -406,8 +406,8 @@ export default function EvaluatePanel() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  Temperature: <span className="text-slate-200">{temperature}</span>
+                <label className="block text-xs text-zinc-400 mb-1">
+                  Temperature: <span className="text-zinc-200">{temperature}</span>
                 </label>
                 <input
                   type="range" min={0.1} max={1.0} step={0.05} value={temperature}
@@ -418,14 +418,14 @@ export default function EvaluatePanel() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">
+              <label className="block text-xs text-zinc-400 mb-1">
                 Checkpoint{' '}
-                <span className="text-slate-600">(empty = base XTTS v2)</span>
+                <span className="text-zinc-600">(empty = base XTTS v2)</span>
               </label>
               <select
                 value={checkpointDir}
                 onChange={e => setCheckpointDir(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-900 border border-zinc-600 rounded px-2 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
               >
                 <option value="">Base XTTS v2</option>
                 {checkpoints.map(ck => (
@@ -437,7 +437,7 @@ export default function EvaluatePanel() {
             </div>
 
             <div className="flex items-center justify-between pt-1">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-zinc-500">
                 {totalPairs} audio sample{totalPairs !== 1 ? 's' : ''} to generate
               </p>
               <button
@@ -453,18 +453,18 @@ export default function EvaluatePanel() {
 
         {/* ── Right: voice selector ── */}
         <div className="col-span-2">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-2 h-full">
+          <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-2 h-full">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Voices</p>
+              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Voices</p>
               <button
                 onClick={() => setSelectedVoices([])}
-                className="text-xs text-slate-500 hover:text-slate-300"
+                className="text-xs text-zinc-500 hover:text-zinc-300"
               >
                 All
               </button>
             </div>
             {voices.length === 0 ? (
-              <p className="text-xs text-slate-500 py-2">
+              <p className="text-xs text-zinc-500 py-2">
                 No voices found. Build a dataset first.
               </p>
             ) : (
@@ -476,7 +476,7 @@ export default function EvaluatePanel() {
                     <label
                       key={v.id}
                       className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
-                        selected ? 'bg-emerald-900/30 border border-emerald-700/40' : 'hover:bg-slate-700/40'
+                        selected ? 'bg-emerald-900/30 border border-emerald-700/40' : 'hover:bg-zinc-700/40'
                       }`}
                     >
                       <input
@@ -485,14 +485,14 @@ export default function EvaluatePanel() {
                         onChange={() => toggleVoice(v.id)}
                         className="accent-emerald-500"
                       />
-                      <span className="text-xs text-slate-300 truncate">{v.name}</span>
-                      <span className="text-xs text-slate-600 capitalize ml-auto">{v.source}</span>
+                      <span className="text-xs text-zinc-300 truncate">{v.name}</span>
+                      <span className="text-xs text-zinc-600 capitalize ml-auto">{v.source}</span>
                     </label>
                   )
                 })}
               </div>
             )}
-            <p className="text-xs text-slate-600 pt-1">
+            <p className="text-xs text-zinc-600 pt-1">
               {selectedVoices.length === 0
                 ? `${voices.length} voices (all)`
                 : `${selectedVoices.length} selected`}
@@ -504,7 +504,7 @@ export default function EvaluatePanel() {
       {/* ── Jobs ── */}
       <div className="space-y-3">
         {jobs.length === 0 ? (
-          <p className="text-sm text-slate-500 py-2">No evaluation jobs yet.</p>
+          <p className="text-sm text-zinc-500 py-2">No evaluation jobs yet.</p>
         ) : (
           jobs.map(job => (
             <div key={job.id}>
@@ -515,7 +515,7 @@ export default function EvaluatePanel() {
                   className={`mt-1 text-xs px-3 py-1 rounded transition-colors ${
                     selectedJobId === job.id
                       ? 'bg-emerald-800/50 text-emerald-300'
-                      : 'bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200'
+                      : 'bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   {selectedJobId === job.id ? 'Viewing results' : 'View results'}
@@ -528,12 +528,12 @@ export default function EvaluatePanel() {
 
       {/* ── Results ── */}
       {loadingResults && (
-        <p className="text-sm text-slate-500">Loading results…</p>
+        <p className="text-sm text-zinc-500">Loading results…</p>
       )}
 
       {summaries && summaries.length > 0 && (
         <div className="space-y-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
             Summary — {selectedJobId}
           </p>
           <SpeakerSummaryTable summaries={summaries} />
@@ -542,7 +542,7 @@ export default function EvaluatePanel() {
 
       {results && results.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
             Sample Results
           </p>
           <ResultsTable results={results} />

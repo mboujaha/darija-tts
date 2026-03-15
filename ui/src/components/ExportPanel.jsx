@@ -26,11 +26,11 @@ function SizeBar({ used, total, label }) {
   const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0
   return (
     <div>
-      <div className="flex justify-between text-xs text-slate-400 mb-1">
+      <div className="flex justify-between text-xs text-zinc-400 mb-1">
         <span>{label}</span>
         <span>{used} / {total}</span>
       </div>
-      <div className="w-full bg-slate-900 rounded-full h-1.5">
+      <div className="w-full bg-zinc-900 rounded-full h-1.5">
         <div
           className="h-1.5 rounded-full bg-emerald-500 transition-all"
           style={{ width: `${pct}%` }}
@@ -101,21 +101,21 @@ export default function ExportPanel() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-100">Export</h2>
+        <h2 className="text-xl font-semibold text-zinc-100">Export</h2>
         <button
           onClick={loadStats}
-          className="text-xs px-3 py-1.5 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+          className="text-xs px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
         >
           Refresh
         </button>
       </div>
 
       {/* Dataset stats */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-4">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dataset</p>
+      <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-4">
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Dataset</p>
 
         {!ds ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-zinc-500">Loading…</p>
         ) : !ds.ready ? (
           <div className="bg-yellow-950/30 border border-yellow-800/40 rounded p-3">
             <p className="text-sm text-yellow-400">Dataset not ready.</p>
@@ -131,9 +131,9 @@ export default function ExportPanel() {
                 ['Eval clips', ds.eval_clips],
                 ['Speakers', ds.speaker_wavs],
               ].map(([label, val]) => (
-                <div key={label} className="bg-slate-900/60 rounded p-3 text-center">
-                  <p className="text-xs text-slate-500 mb-1">{label}</p>
-                  <p className="text-lg font-bold text-slate-100">{val.toLocaleString()}</p>
+                <div key={label} className="bg-zinc-900/60 rounded p-3 text-center">
+                  <p className="text-xs text-zinc-500 mb-1">{label}</p>
+                  <p className="text-lg font-bold text-zinc-100">{val.toLocaleString()}</p>
                 </div>
               ))}
             </div>
@@ -146,14 +146,14 @@ export default function ExportPanel() {
 
             {/* Format selector */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-slate-400">Export format</p>
+              <p className="text-xs font-medium text-zinc-400">Export format</p>
               {FORMATS.map(fmt => (
                 <label
                   key={fmt.id}
                   className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                     selectedFmt === fmt.id
                       ? 'border-emerald-600/60 bg-emerald-950/20'
-                      : 'border-slate-700 hover:border-slate-600'
+                      : 'border-zinc-700 hover:border-zinc-600'
                   }`}
                 >
                   <input
@@ -165,8 +165,8 @@ export default function ExportPanel() {
                     className="mt-0.5 accent-emerald-500"
                   />
                   <div>
-                    <p className="text-sm font-medium text-slate-200">{fmt.label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{fmt.desc}</p>
+                    <p className="text-sm font-medium text-zinc-200">{fmt.label}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{fmt.desc}</p>
                   </div>
                 </label>
               ))}
@@ -186,7 +186,7 @@ export default function ExportPanel() {
               >
                 {downloading ? 'Building ZIP…' : `Download ${selectedFmt.toUpperCase()} ZIP`}
               </button>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-zinc-500">
                 ZIP will be built on-the-fly — large datasets may take a minute.
               </p>
             </div>
@@ -195,13 +195,13 @@ export default function ExportPanel() {
       </div>
 
       {/* Checkpoint export */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-3">
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
           Trained Checkpoints
         </p>
 
         {checkpoints.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-zinc-500">
             No trained checkpoints found. Complete a training run first.
           </p>
         ) : (
@@ -209,16 +209,16 @@ export default function ExportPanel() {
             {checkpoints.map(ck => (
               <div
                 key={ck.run_id}
-                className="flex items-center gap-3 px-3 py-2.5 bg-slate-900/50 rounded border border-slate-700"
+                className="flex items-center gap-3 px-3 py-2.5 bg-zinc-900/50 rounded border border-zinc-700"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-mono text-slate-200 truncate">{ck.run_id}</p>
-                  <p className="text-xs text-slate-500">{ck.size_mb} MB</p>
+                  <p className="text-sm font-mono text-zinc-200 truncate">{ck.run_id}</p>
+                  <p className="text-xs text-zinc-500">{ck.size_mb} MB</p>
                 </div>
                 <button
                   onClick={() => downloadCheckpoint(ck.run_id)}
                   disabled={downloadingCkpt === ck.run_id}
-                  className="flex-shrink-0 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded transition-colors disabled:opacity-50"
+                  className="flex-shrink-0 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-xs rounded transition-colors disabled:opacity-50"
                 >
                   {downloadingCkpt === ck.run_id ? 'Packing…' : 'Download .tar.gz'}
                 </button>

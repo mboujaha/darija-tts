@@ -8,18 +8,18 @@ const MAX_LOG_LINES = 200
 
 const statusColors = {
   running:    'bg-emerald-500',
-  queued:     'bg-slate-500',
-  completed:  'bg-slate-600',
+  queued:     'bg-zinc-500',
+  completed:  'bg-zinc-600',
   failed:     'bg-red-600',
   cancelling: 'bg-yellow-500',
-  cancelled:  'bg-slate-600',
+  cancelled:  'bg-zinc-600',
 }
 
 const logLineCls = (line) => {
   if (line.startsWith('OK')) return 'text-emerald-400'
   if (line.startsWith('REJECT')) return 'text-yellow-400'
   if (line.startsWith('ERROR')) return 'text-red-400'
-  return 'text-slate-300'
+  return 'text-zinc-300'
 }
 
 const confBadgeCls = (conf) => {
@@ -31,7 +31,7 @@ const confBadgeCls = (conf) => {
 const statusBadgeCls = (s) => {
   if (s === 'corrected') return 'bg-blue-900/50 text-blue-300'
   if (s === 'rejected') return 'bg-red-900/50 text-red-300'
-  return 'bg-slate-700 text-slate-300'
+  return 'bg-zinc-700 text-zinc-300'
 }
 
 function JobCard({ job, logs, onCancel }) {
@@ -45,15 +45,15 @@ function JobCard({ job, logs, onCancel }) {
   const canCancel = job.status === 'running' || job.status === 'queued'
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[job.status] || 'bg-slate-500'}`} />
-        <span className="text-sm font-mono text-slate-300 flex-1 truncate">{job.id}</span>
-        <span className="text-xs text-slate-500 capitalize">{job.status}</span>
+    <div className="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-700">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[job.status] || 'bg-zinc-500'}`} />
+        <span className="text-sm font-mono text-zinc-300 flex-1 truncate">{job.id}</span>
+        <span className="text-xs text-zinc-500 capitalize">{job.status}</span>
         {canCancel && (
           <button
             onClick={() => onCancel(job.id)}
-            className="text-xs px-2 py-1 bg-slate-700 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded transition-colors"
+            className="text-xs px-2 py-1 bg-zinc-700 hover:bg-red-900/40 text-zinc-400 hover:text-red-400 rounded transition-colors"
           >
             Cancel
           </button>
@@ -61,13 +61,13 @@ function JobCard({ job, logs, onCancel }) {
       </div>
 
       <div className="px-4 py-2">
-        <div className="flex justify-between text-xs text-slate-400 mb-1">
+        <div className="flex justify-between text-xs text-zinc-400 mb-1">
           <span>{job.message || '—'}</span>
           <span>{Math.round((job.progress || 0) * 100)}%</span>
         </div>
-        <div className="w-full bg-slate-900 rounded-full h-1.5">
+        <div className="w-full bg-zinc-900 rounded-full h-1.5">
           <div
-            className={`h-1.5 rounded-full transition-all ${statusColors[job.status] || 'bg-slate-500'}`}
+            className={`h-1.5 rounded-full transition-all ${statusColors[job.status] || 'bg-zinc-500'}`}
             style={{ width: `${Math.round((job.progress || 0) * 100)}%` }}
           />
         </div>
@@ -76,7 +76,7 @@ function JobCard({ job, logs, onCancel }) {
       {jobLogs.length > 0 && (
         <div
           ref={logRef}
-          className="px-4 py-2 max-h-40 overflow-y-auto bg-slate-900/60 font-mono text-xs space-y-0.5"
+          className="px-4 py-2 max-h-40 overflow-y-auto bg-zinc-900/60 font-mono text-xs space-y-0.5"
         >
           {jobLogs.map((line, i) => (
             <div key={i} className={logLineCls(line)}>{line}</div>
@@ -106,9 +106,9 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
   const audioUrl = `/api/audio/processed/${item.dialect}/${item.id}.wav`
 
   return (
-    <tr className="border-b border-slate-700 hover:bg-slate-800/50">
+    <tr className="border-b border-zinc-700 hover:bg-zinc-800/50">
       <td className="px-3 py-2">
-        <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300 capitalize">
+        <span className="text-xs px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 capitalize">
           {item.dialect}
         </span>
       </td>
@@ -129,13 +129,13 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="w-full bg-slate-900 border border-emerald-500 rounded px-2 py-1 text-sm text-slate-100 text-right focus:outline-none"
+            className="w-full bg-zinc-900 border border-emerald-500 rounded px-2 py-1 text-sm text-zinc-100 text-right focus:outline-none"
             style={{ fontFamily: "'Noto Sans Arabic', Arial, sans-serif" }}
           />
         ) : (
           <span
             dir="rtl"
-            className="text-sm text-slate-200 block text-right"
+            className="text-sm text-zinc-200 block text-right"
             style={{ fontFamily: "'Noto Sans Arabic', Arial, sans-serif" }}
           >
             {item.text || '—'}
@@ -320,17 +320,17 @@ export default function TranscribePanel() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-100">Transcribe</h2>
+        <h2 className="text-xl font-semibold text-zinc-100">Transcribe</h2>
       </div>
 
       {/* Config panel */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-4">
+      <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           {/* Dialect */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Dialect (optional)</label>
+            <label className="block text-xs font-medium text-zinc-400 mb-1">Dialect (optional)</label>
             <select
-              className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-zinc-900 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
               value={dialect}
               onChange={e => setDialect(e.target.value)}
             >
@@ -341,9 +341,9 @@ export default function TranscribePanel() {
 
           {/* Model */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Whisper Model</label>
+            <label className="block text-xs font-medium text-zinc-400 mb-1">Whisper Model</label>
             <select
-              className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-zinc-900 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
               value={model}
               onChange={e => setModel(e.target.value)}
             >
@@ -356,8 +356,8 @@ export default function TranscribePanel() {
 
         {/* Min confidence slider */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Min Confidence: <span className="text-slate-200">{(minConf * 100).toFixed(0)}%</span>
+          <label className="block text-xs font-medium text-zinc-400 mb-1">
+            Min Confidence: <span className="text-zinc-200">{(minConf * 100).toFixed(0)}%</span>
           </label>
           <input
             type="range" min={0} max={1} step={0.05} value={minConf}
@@ -378,15 +378,15 @@ export default function TranscribePanel() {
       {/* Stats grid */}
       {Object.keys(stats).length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Transcription Stats</p>
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Transcription Stats</p>
           <div className="grid grid-cols-5 gap-2">
             {DIALECTS.map(d => {
               const s = stats[d] || { transcribed: 0, avg_confidence: 0 }
               return (
-                <div key={d} className="bg-slate-800 border border-slate-700 rounded-lg p-3 text-center">
-                  <p className="text-xs text-slate-400 capitalize mb-1">{d}</p>
-                  <p className="text-lg font-bold text-slate-100">{s.transcribed || 0}</p>
-                  <p className="text-xs text-slate-500">{s.avg_confidence ? (s.avg_confidence * 100).toFixed(0) + '% avg' : '—'}</p>
+                <div key={d} className="bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-center">
+                  <p className="text-xs text-zinc-400 capitalize mb-1">{d}</p>
+                  <p className="text-lg font-bold text-zinc-100">{s.transcribed || 0}</p>
+                  <p className="text-xs text-zinc-500">{s.avg_confidence ? (s.avg_confidence * 100).toFixed(0) + '% avg' : '—'}</p>
                 </div>
               )
             })}
@@ -396,12 +396,12 @@ export default function TranscribePanel() {
 
       {/* Review table */}
       <div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Review</p>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Review</p>
 
         {/* Filter bar */}
         <div className="flex flex-wrap gap-3 mb-3 items-center">
           <select
-            className="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
             value={reviewDialect}
             onChange={e => setReviewDialect(e.target.value)}
           >
@@ -417,7 +417,7 @@ export default function TranscribePanel() {
                 className={`text-xs px-3 py-1.5 rounded capitalize transition-colors ${
                   reviewStatus === tab
                     ? 'bg-emerald-700 text-white'
-                    : 'bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200'
+                    : 'bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 {tab.replace('_', ' ')}
@@ -425,7 +425,7 @@ export default function TranscribePanel() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
             <span>Conf:</span>
             <input
               type="range" min={0} max={1} step={0.05} value={confRange[0]}
@@ -444,13 +444,13 @@ export default function TranscribePanel() {
         </div>
 
         {reviewItems.length === 0 ? (
-          <p className="text-sm text-slate-500 py-4">No transcriptions to review.</p>
+          <p className="text-sm text-zinc-500 py-4">No transcriptions to review.</p>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-slate-700">
+            <div className="overflow-x-auto rounded-lg border border-zinc-700">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-slate-400 bg-slate-800 border-b border-slate-700">
+                  <tr className="text-left text-xs text-zinc-400 bg-zinc-800 border-b border-zinc-700">
                     <th className="px-3 py-2">Dialect</th>
                     <th className="px-3 py-2">Audio</th>
                     <th className="px-3 py-2 text-right">Text</th>
@@ -459,7 +459,7 @@ export default function TranscribePanel() {
                     <th className="px-3 py-2">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-slate-900/40">
+                <tbody className="bg-zinc-900/40">
                   {reviewItems.map(item => (
                     <ReviewRow
                       key={item.id}
@@ -474,7 +474,7 @@ export default function TranscribePanel() {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between mt-3 text-xs text-slate-400">
+            <div className="flex items-center justify-between mt-3 text-xs text-zinc-400">
               <span>
                 {reviewOffset + 1}–{Math.min(reviewOffset + REVIEW_LIMIT, reviewTotal)} of {reviewTotal}
               </span>
@@ -482,14 +482,14 @@ export default function TranscribePanel() {
                 <button
                   disabled={reviewOffset === 0}
                   onClick={() => loadReview(Math.max(0, reviewOffset - REVIEW_LIMIT))}
-                  className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   disabled={reviewOffset + REVIEW_LIMIT >= reviewTotal}
                   onClick={() => loadReview(reviewOffset + REVIEW_LIMIT)}
-                  className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>
@@ -502,7 +502,7 @@ export default function TranscribePanel() {
       {/* Job cards */}
       <div className="space-y-3">
         {jobs.length === 0 ? (
-          <p className="text-sm text-slate-500 py-4">No transcription jobs yet.</p>
+          <p className="text-sm text-zinc-500 py-4">No transcription jobs yet.</p>
         ) : (
           jobs.map(job => (
             <JobCard key={job.id} job={job} logs={logs} onCancel={cancelJob} />

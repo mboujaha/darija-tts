@@ -18,18 +18,18 @@ const NAV_ITEMS = [
 
 function GPUBadge({ gpu }) {
   if (!gpu?.available) return (
-    <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">No GPU</span>
+    <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">No GPU</span>
   )
   const pct = gpu.utilization
   const memPct = Math.round((gpu.memory_used_mb / gpu.memory_total_mb) * 100)
   return (
-    <div className="flex items-center gap-2 text-xs text-slate-300">
+    <div className="flex items-center gap-2 text-xs text-zinc-300">
       <span className="text-emerald-400">{gpu.name?.split(' ').slice(-1)[0]}</span>
       <span>{pct}%</span>
-      <span className="text-slate-500">|</span>
+      <span className="text-zinc-500">|</span>
       <span>{(gpu.memory_used_mb / 1024).toFixed(1)}/{(gpu.memory_total_mb / 1024).toFixed(1)}GB</span>
-      <span className="text-slate-500">|</span>
-      <span className={gpu.temperature > 80 ? 'text-red-400' : 'text-slate-300'}>{gpu.temperature}°C</span>
+      <span className="text-zinc-500">|</span>
+      <span className={gpu.temperature > 80 ? 'text-red-400' : 'text-zinc-300'}>{gpu.temperature}°C</span>
     </div>
   )
 }
@@ -45,12 +45,12 @@ export default function Layout() {
   }, [])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-950">
+    <div className="flex h-screen overflow-hidden bg-zinc-950">
       {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col">
-        <div className="px-4 py-4 border-b border-slate-800">
+      <aside className="w-56 flex-shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+        <div className="px-4 py-4 border-b border-zinc-800">
           <h1 className="text-lg font-bold text-emerald-400 tracking-tight">Darija TTS</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Arabic Dialect Pipeline</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Arabic Dialect Pipeline</p>
         </div>
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
           {NAV_ITEMS.map(({ to, label, icon }) => (
@@ -61,7 +61,7 @@ export default function Layout() {
                 `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                   isActive
                     ? 'bg-emerald-900/40 text-emerald-400 font-medium'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
                 }`
               }
             >
@@ -75,7 +75,7 @@ export default function Layout() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-12 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 flex-shrink-0">
+        <header className="h-12 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 flex-shrink-0">
           <div />
           <GPUBadge gpu={gpu} />
         </header>

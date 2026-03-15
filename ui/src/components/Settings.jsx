@@ -3,9 +3,9 @@ import api from '../api'
 
 function Section({ title, children }) {
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-      <div className="px-5 py-3 border-b border-slate-700 bg-slate-800/80">
-        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">{title}</h3>
+    <div className="bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden">
+      <div className="px-5 py-3 border-b border-zinc-700 bg-zinc-800/80">
+        <h3 className="text-sm font-semibold text-zinc-200 uppercase tracking-wider">{title}</h3>
       </div>
       <div className="p-5 space-y-4">{children}</div>
     </div>
@@ -15,16 +15,16 @@ function Section({ title, children }) {
 function Field({ label, hint, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
-      {hint && <p className="text-xs text-slate-500 mb-1.5">{hint}</p>}
+      <label className="block text-sm font-medium text-zinc-300 mb-1">{label}</label>
+      {hint && <p className="text-xs text-zinc-500 mb-1.5">{hint}</p>}
       {children}
     </div>
   )
 }
 
-const inputCls = "w-full bg-slate-900 border border-slate-600 rounded-md px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+const inputCls = "w-full bg-zinc-900 border border-zinc-600 rounded-md px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
 const btnPrimary = "px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-const btnSecondary = "px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-md transition-colors disabled:opacity-50"
+const btnSecondary = "px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-sm font-medium rounded-md transition-colors disabled:opacity-50"
 
 export default function Settings() {
   const [remoteServer, setRemoteServer] = useState({
@@ -133,7 +133,7 @@ export default function Settings() {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-100">Settings</h2>
+        <h2 className="text-xl font-semibold text-zinc-100">Settings</h2>
         {saveMsg && (
           <span className={`text-sm px-3 py-1 rounded-md ${saveMsg.includes('failed') ? 'bg-red-900/50 text-red-400' : 'bg-emerald-900/50 text-emerald-400'}`}>
             {saveMsg}
@@ -143,7 +143,7 @@ export default function Settings() {
 
       {/* Remote Training Server */}
       <Section title="Remote Training Server">
-        <p className="text-xs text-slate-500 -mt-2">
+        <p className="text-xs text-zinc-500 -mt-2">
           Configure SSH access to the V100 training server. Credentials are stored locally in SQLite.
         </p>
 
@@ -187,15 +187,15 @@ export default function Settings() {
                   onChange={() => setRemoteServer(p => ({ ...p, auth_method: method }))}
                   className="accent-emerald-500"
                 />
-                <span className="text-sm text-slate-300 capitalize">{method === 'key' ? 'SSH Key / Certificate' : 'Password'}</span>
+                <span className="text-sm text-zinc-300 capitalize">{method === 'key' ? 'SSH Key / Certificate' : 'Password'}</span>
               </label>
             ))}
           </div>
         </Field>
 
         {remoteServer.auth_method === 'key' && (
-          <div className="space-y-3 border border-slate-700 rounded-lg p-4 bg-slate-900/50">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">SSH Private Key</p>
+          <div className="space-y-3 border border-zinc-700 rounded-lg p-4 bg-zinc-900/50">
+            <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">SSH Private Key</p>
 
             {/* Upload button */}
             <div className="flex items-center gap-3">

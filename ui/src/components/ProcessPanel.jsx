@@ -8,18 +8,18 @@ const MAX_LOG_LINES = 200
 
 const statusColors = {
   running:    'bg-emerald-500',
-  queued:     'bg-slate-500',
-  completed:  'bg-slate-600',
+  queued:     'bg-zinc-500',
+  completed:  'bg-zinc-600',
   failed:     'bg-red-600',
   cancelling: 'bg-yellow-500',
-  cancelled:  'bg-slate-600',
+  cancelled:  'bg-zinc-600',
 }
 
 const logLineCls = (line) => {
   if (line.startsWith('VIDEO') || line.startsWith('OK')) return 'text-emerald-400'
   if (line.startsWith('REJECT') || line.startsWith('SKIP') || line.startsWith('WARN')) return 'text-yellow-400'
   if (line.startsWith('ERROR')) return 'text-red-400'
-  return 'text-slate-300'
+  return 'text-zinc-300'
 }
 
 function JobCard({ job, logs, onCancel }) {
@@ -33,15 +33,15 @@ function JobCard({ job, logs, onCancel }) {
   const canCancel = job.status === 'running' || job.status === 'queued'
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[job.status] || 'bg-slate-500'}`} />
-        <span className="text-sm font-mono text-slate-300 flex-1 truncate">{job.id}</span>
-        <span className="text-xs text-slate-500 capitalize">{job.status}</span>
+    <div className="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-700">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[job.status] || 'bg-zinc-500'}`} />
+        <span className="text-sm font-mono text-zinc-300 flex-1 truncate">{job.id}</span>
+        <span className="text-xs text-zinc-500 capitalize">{job.status}</span>
         {canCancel && (
           <button
             onClick={() => onCancel(job.id)}
-            className="text-xs px-2 py-1 bg-slate-700 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded transition-colors"
+            className="text-xs px-2 py-1 bg-zinc-700 hover:bg-red-900/40 text-zinc-400 hover:text-red-400 rounded transition-colors"
           >
             Cancel
           </button>
@@ -49,13 +49,13 @@ function JobCard({ job, logs, onCancel }) {
       </div>
 
       <div className="px-4 py-2">
-        <div className="flex justify-between text-xs text-slate-400 mb-1">
+        <div className="flex justify-between text-xs text-zinc-400 mb-1">
           <span>{job.message || '—'}</span>
           <span>{Math.round((job.progress || 0) * 100)}%</span>
         </div>
-        <div className="w-full bg-slate-900 rounded-full h-1.5">
+        <div className="w-full bg-zinc-900 rounded-full h-1.5">
           <div
-            className={`h-1.5 rounded-full transition-all ${statusColors[job.status] || 'bg-slate-500'}`}
+            className={`h-1.5 rounded-full transition-all ${statusColors[job.status] || 'bg-zinc-500'}`}
             style={{ width: `${Math.round((job.progress || 0) * 100)}%` }}
           />
         </div>
@@ -64,7 +64,7 @@ function JobCard({ job, logs, onCancel }) {
       {jobLogs.length > 0 && (
         <div
           ref={logRef}
-          className="px-4 py-2 max-h-40 overflow-y-auto bg-slate-900/60 font-mono text-xs space-y-0.5"
+          className="px-4 py-2 max-h-40 overflow-y-auto bg-zinc-900/60 font-mono text-xs space-y-0.5"
         >
           {jobLogs.map((line, i) => (
             <div key={i} className={logLineCls(line)}>{line}</div>
@@ -171,16 +171,16 @@ export default function ProcessPanel() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-100">Process</h2>
+        <h2 className="text-xl font-semibold text-zinc-100">Process</h2>
       </div>
 
       {/* Config panel */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-4">
+      <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-4">
         {/* Dialect */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Dialect (optional)</label>
+          <label className="block text-xs font-medium text-zinc-400 mb-1">Dialect (optional)</label>
           <select
-            className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-zinc-900 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
             value={dialect}
             onChange={e => setDialect(e.target.value)}
           >
@@ -191,8 +191,8 @@ export default function ProcessPanel() {
 
         {/* Min duration */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Min Duration: <span className="text-slate-200">{minDuration}s</span>
+          <label className="block text-xs font-medium text-zinc-400 mb-1">
+            Min Duration: <span className="text-zinc-200">{minDuration}s</span>
           </label>
           <div className="flex gap-3 items-center">
             <input
@@ -203,15 +203,15 @@ export default function ProcessPanel() {
             <input
               type="number" min={1} max={30} step={0.5} value={minDuration}
               onChange={e => setMinDuration(Number(e.target.value))}
-              className="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 text-center"
+              className="w-16 bg-zinc-900 border border-zinc-600 rounded px-2 py-1 text-sm text-zinc-100 text-center"
             />
           </div>
         </div>
 
         {/* Max duration */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Max Duration: <span className="text-slate-200">{maxDuration}s</span>
+          <label className="block text-xs font-medium text-zinc-400 mb-1">
+            Max Duration: <span className="text-zinc-200">{maxDuration}s</span>
           </label>
           <div className="flex gap-3 items-center">
             <input
@@ -222,15 +222,15 @@ export default function ProcessPanel() {
             <input
               type="number" min={1} max={30} step={0.5} value={maxDuration}
               onChange={e => setMaxDuration(Number(e.target.value))}
-              className="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 text-center"
+              className="w-16 bg-zinc-900 border border-zinc-600 rounded px-2 py-1 text-sm text-zinc-100 text-center"
             />
           </div>
         </div>
 
         {/* Min SNR */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Min SNR: <span className="text-slate-200">{minSnr} dB</span>
+          <label className="block text-xs font-medium text-zinc-400 mb-1">
+            Min SNR: <span className="text-zinc-200">{minSnr} dB</span>
           </label>
           <input
             type="range" min={0} max={40} step={1} value={minSnr}
@@ -248,7 +248,7 @@ export default function ProcessPanel() {
               onChange={e => setDenoise(e.target.checked)}
               className="accent-emerald-500 w-4 h-4"
             />
-            <span className="text-sm text-slate-300">Denoise</span>
+            <span className="text-sm text-zinc-300">Denoise</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -257,8 +257,8 @@ export default function ProcessPanel() {
               onChange={e => setDiarize(e.target.checked)}
               className="accent-emerald-500 w-4 h-4"
             />
-            <span className="text-sm text-slate-300">Diarize</span>
-            <span className="text-xs text-slate-500">(requires HF token)</span>
+            <span className="text-sm text-zinc-300">Diarize</span>
+            <span className="text-xs text-zinc-500">(requires HF token)</span>
           </label>
         </div>
 
@@ -274,15 +274,15 @@ export default function ProcessPanel() {
       {/* Stats grid */}
       {Object.keys(stats).length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Clip Stats</p>
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Clip Stats</p>
           <div className="grid grid-cols-5 gap-2">
             {DIALECTS.map(d => {
               const s = stats[d] || { count: 0, hours: 0 }
               return (
-                <div key={d} className="bg-slate-800 border border-slate-700 rounded-lg p-3 text-center">
-                  <p className="text-xs text-slate-400 capitalize mb-1">{d}</p>
-                  <p className="text-lg font-bold text-slate-100">{s.count}</p>
-                  <p className="text-xs text-slate-500">{s.hours}h</p>
+                <div key={d} className="bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-center">
+                  <p className="text-xs text-zinc-400 capitalize mb-1">{d}</p>
+                  <p className="text-lg font-bold text-zinc-100">{s.count}</p>
+                  <p className="text-xs text-zinc-500">{s.hours}h</p>
                 </div>
               )
             })}
@@ -293,7 +293,7 @@ export default function ProcessPanel() {
       {/* Job cards */}
       <div className="space-y-3">
         {jobs.length === 0 ? (
-          <p className="text-sm text-slate-500 py-4">No process jobs yet.</p>
+          <p className="text-sm text-zinc-500 py-4">No process jobs yet.</p>
         ) : (
           jobs.map(job => (
             <JobCard key={job.id} job={job} logs={logs} onCancel={cancelJob} />
