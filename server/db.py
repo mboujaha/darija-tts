@@ -454,7 +454,7 @@ async def get_transcriptions(
     limit: int = 50,
     offset: int = 0,
 ) -> dict:
-    conditions = ["c.status IN ('transcribed','corrected','rejected')"]
+    conditions = ["c.status IN ('transcribed','corrected','rejected','approved')"]
     params: list = []
 
     if dialect:

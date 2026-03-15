@@ -101,7 +101,7 @@ async def reject_clip(clip_id: str):
 @router.post("/bulk-approve")
 async def bulk_approve(body: BulkApprove):
     for clip_id in body.clip_ids:
-        await db.update_clip_status(clip_id, "transcribed")
+        await db.update_clip_status(clip_id, "approved")
     return {"approved": len(body.clip_ids)}
 
 

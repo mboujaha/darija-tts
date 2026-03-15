@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../api'
 
 const DIALECTS = ['casablanca', 'marrakech', 'north', 'east', 'south']
@@ -20,6 +21,13 @@ const logLineCls = (line) => {
   if (line.startsWith('SKIP')) return 'text-yellow-400'
   if (line.startsWith('ERROR')) return 'text-red-400'
   return 'text-zinc-300'
+}
+
+const parseBuildResult = (message) => {
+  if (!message) return null
+  const m = message.match(/Done:\s*(\d+)\s*clips?,\s*(\d+)\s*speakers?,\s*(\d+)\s*train\s*\/\s*(\d+)\s*eval/)
+  if (!m) return null
+  return { total: +m[1], speakers: +m[2], train: +m[3], eval: +m[4] }
 }
 
 function JobCard({ job, logs, onCancel }) {
@@ -76,6 +84,7 @@ function JobCard({ job, logs, onCancel }) {
 }
 
 export default function DatasetPanel() {
+  const navigate = useNavigate()
   const [dialect, setDialect] = useState('')
   const [minDuration, setMinDuration] = useState(3.0)
   const [maxDuration, setMaxDuration] = useState(11.0)
@@ -85,6 +94,7 @@ export default function DatasetPanel() {
   const [stats, setStats] = useState(null)
   const [preview, setPreview] = useState([])
   const [starting, setStarting] = useState(false)
+  const [buildResults, setBuildResults] = useState({})
   const wsRef = useRef(null)
 
   const loadJobs = async () => {
@@ -128,6 +138,7 @@ export default function DatasetPanel() {
             updated[idx] = { ...updated[idx], status: msg.status, progress: msg.progress, message: msg.message }
             return updated
           })
+          if (['completed', 'failed'].includes(msg.status)) loadStats()
         } else if (msg.type === 'dataset_log') {
           setLogs(prev => {
             const existing = prev[msg.job_id] || []
@@ -143,6 +154,15 @@ export default function DatasetPanel() {
       ws.close()
     }
   }, [])
+
+  useEffect(() => {
+    jobs.forEach(job => {
+      if (job.status === 'completed' && job.message && !buildResults[job.id]) {
+        const parsed = parseBuildResult(job.message)
+        if (parsed) setBuildResults(prev => ({ ...prev, [job.id]: parsed }))
+      }
+    })
+  }, [jobs])
 
   const startBuild = async () => {
     setStarting(true)
@@ -170,10 +190,52 @@ export default function DatasetPanel() {
     } catch (e) {}
   }
 
+  const eligibilityPreview = (() => {
+    if (!stats) return null
+    const speakers = stats.by_speaker || []
+    const filtered = dialect ? speakers.filter(s => s.dialect === dialect) : speakers
+    const qualifying = filtered.filter(s => s.clips >= minSpeakerClips)
+    const excluded = filtered.filter(s => s.clips < minSpeakerClips)
+    return {
+      qualifyingClips: qualifying.reduce((s, x) => s + x.clips, 0),
+      excludedClips: excluded.reduce((s, x) => s + x.clips, 0),
+      qualifyingSpeakers: qualifying.length,
+      excludedSpeakers: excluded.length,
+      totalSpeakers: filtered.length,
+      willBeEmpty: qualifying.length === 0,
+    }
+  })()
+
+  const speakerWarning = (() => {
+    if (!stats || !eligibilityPreview) return null
+    const speakers = stats.by_speaker || []
+    const filtered = dialect ? speakers.filter(s => s.dialect === dialect) : speakers
+    if (eligibilityPreview.willBeEmpty && filtered.length > 0) {
+      return { recommendedMin: Math.min(...filtered.map(s => s.clips)) }
+    }
+    return null
+  })()
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-zinc-100">Dataset Builder</h2>
+      </div>
+
+      {/* Explainer banner */}
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 flex gap-3 items-start">
+        <span className="text-xs font-semibold text-emerald-400 bg-emerald-900/30 px-2 py-0.5 rounded mt-0.5 flex-shrink-0">
+          Step 4 / 6
+        </span>
+        <div>
+          <p className="text-sm font-medium text-zinc-200 mb-0.5">Build your training dataset</p>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            Filters your transcribed clips by duration, groups them by speaker, and writes a
+            Coqui-formatted dataset to <code className="text-zinc-300 bg-zinc-800 px-1 rounded">data/dataset/</code> —
+            with <code className="text-zinc-300 bg-zinc-800 px-1 rounded">metadata_train.csv</code> and{' '}
+            <code className="text-zinc-300 bg-zinc-800 px-1 rounded">metadata_eval.csv</code> — ready for the Train step.
+          </p>
+        </div>
       </div>
 
       {/* Config panel */}
@@ -239,6 +301,24 @@ export default function DatasetPanel() {
           />
         </div>
 
+        {/* Speaker threshold warning */}
+        {speakerWarning && (
+          <div className="flex items-start gap-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg px-3 py-2.5">
+            <span className="text-yellow-400 flex-shrink-0 mt-0.5">⚠</span>
+            <p className="text-xs text-yellow-200/80 leading-relaxed flex-1">
+              All eligible clips belong to speaker groups below the current minimum of{' '}
+              <span className="font-mono text-yellow-300">{minSpeakerClips}</span>.
+              The build will produce an empty dataset.
+            </p>
+            <button
+              onClick={() => setMinSpeakerClips(speakerWarning.recommendedMin)}
+              className="text-xs px-2 py-1 bg-yellow-700/40 hover:bg-yellow-700/60 text-yellow-300 rounded transition-colors flex-shrink-0"
+            >
+              Use {speakerWarning.recommendedMin}
+            </button>
+          </div>
+        )}
+
         <button
           onClick={startBuild}
           disabled={starting}
@@ -248,10 +328,49 @@ export default function DatasetPanel() {
         </button>
       </div>
 
+      {/* Eligibility preview */}
+      {eligibilityPreview && (
+        <div>
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Build Preview</p>
+          <div className={`border rounded-lg p-3 grid grid-cols-3 gap-3 ${
+            eligibilityPreview.willBeEmpty ? 'bg-red-900/10 border-red-800/50' : 'bg-zinc-800 border-zinc-700'
+          }`}>
+            <div className="text-center">
+              <p className="text-xs text-zinc-400 mb-1">Clips to write</p>
+              <p className={`text-xl font-bold ${eligibilityPreview.willBeEmpty ? 'text-red-400' : 'text-zinc-100'}`}>
+                {eligibilityPreview.qualifyingClips.toLocaleString()}
+              </p>
+              {eligibilityPreview.excludedClips > 0 && (
+                <p className="text-xs text-zinc-500">{eligibilityPreview.excludedClips.toLocaleString()} excluded</p>
+              )}
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-zinc-400 mb-1">Speakers</p>
+              <p className={`text-xl font-bold ${eligibilityPreview.willBeEmpty ? 'text-red-400' : 'text-zinc-100'}`}>
+                {eligibilityPreview.qualifyingSpeakers}
+              </p>
+              {eligibilityPreview.excludedSpeakers > 0 && (
+                <p className="text-xs text-zinc-500">{eligibilityPreview.excludedSpeakers} below threshold</p>
+              )}
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-zinc-400 mb-1">Min clips filter</p>
+              <p className={`text-xl font-bold ${eligibilityPreview.willBeEmpty ? 'text-red-400' : 'text-zinc-100'}`}>
+                {minSpeakerClips}
+              </p>
+              <p className="text-xs text-zinc-500">per speaker</p>
+            </div>
+          </div>
+          {eligibilityPreview.willBeEmpty && (
+            <p className="text-xs text-red-400 mt-1.5">Lower the min clips value — all speaker groups are below the threshold.</p>
+          )}
+        </div>
+      )}
+
       {/* Stats grid */}
       {stats && (
         <div>
-          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Dataset Stats</p>
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Eligible for Dataset</p>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-center">
               <p className="text-xs text-zinc-400 mb-1">Total Clips</p>
@@ -359,6 +478,53 @@ export default function DatasetPanel() {
           ))
         )}
       </div>
+
+      {/* Build result cards */}
+      {Object.keys(buildResults).length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Last Build Results</p>
+          {jobs.filter(j => j.status === 'completed' && buildResults[j.id]).map(job => {
+            const r = buildResults[job.id]
+            return (
+              <div key={job.id} className="bg-zinc-800 border border-emerald-800/50 rounded-lg px-4 py-3">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-emerald-400">Build complete</span>
+                  <span className="text-xs font-mono text-zinc-500 truncate max-w-xs">{job.id}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-3 mb-2">
+                  {[['Total', r.total, 'text-zinc-100'], ['Train', r.train, 'text-emerald-400'],
+                    ['Eval', r.eval, 'text-blue-400'], ['Speakers', r.speakers, 'text-zinc-100']].map(([label, val, cls]) => (
+                    <div key={label} className="text-center">
+                      <p className="text-xs text-zinc-400 mb-0.5">{label}</p>
+                      <p className={`text-lg font-bold ${cls}`}>{val.toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs font-mono text-zinc-500">
+                  Output: <span className="text-zinc-400">data/dataset/</span>
+                  <span className="ml-2 text-zinc-600">metadata_train.csv · metadata_eval.csv · wavs/</span>
+                </p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Go to Train banner */}
+      {jobs.some(j => j.status === 'completed') && (
+        <div className="bg-emerald-900/20 border border-emerald-800/50 rounded-lg px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-emerald-300">Dataset ready for training</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Head to the Train step to start fine-tuning XTTS v2.</p>
+          </div>
+          <button
+            onClick={() => navigate('/train')}
+            className="ml-4 flex-shrink-0 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-medium rounded transition-colors"
+          >
+            Go to Train →
+          </button>
+        </div>
+      )}
     </div>
   )
 }

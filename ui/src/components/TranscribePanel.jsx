@@ -30,7 +30,8 @@ const confBadgeCls = (conf) => {
 
 const statusBadgeCls = (s) => {
   if (s === 'corrected') return 'bg-blue-900/50 text-blue-300'
-  if (s === 'rejected') return 'bg-red-900/50 text-red-300'
+  if (s === 'rejected')  return 'bg-red-900/50 text-red-300'
+  if (s === 'approved')  return 'bg-emerald-900/50 text-emerald-300'
   return 'bg-zinc-700 text-zinc-300'
 }
 
@@ -386,7 +387,7 @@ export default function TranscribePanel() {
     setSavedCount(prev => prev + 1)
   }
 
-  const STATUS_TABS = ['all', 'needs_review', 'corrected', 'rejected']
+  const STATUS_TABS = ['all', 'needs_review', 'corrected', 'approved', 'rejected']
 
   return (
     <div className="space-y-6 max-w-5xl">
