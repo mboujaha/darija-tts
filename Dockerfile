@@ -27,7 +27,9 @@ RUN pip install --no-cache-dir \
     faster-whisper \
     silero-vad \
     && pip install --no-cache-dir \
-    paramiko cryptography
+    paramiko cryptography \
+    && pip install --no-cache-dir \
+    TTS peft tensorboard
 
 # Copy source
 COPY server/ ./server/
