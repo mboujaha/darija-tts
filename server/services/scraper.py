@@ -54,6 +54,7 @@ async def download_video(url: str, output_dir: Path, video_id: str) -> tuple[Pat
         "--postprocessor-args", "ffmpeg:-ar 22050 -ac 1",
         "-o", output_template,
         "--no-playlist",
+        "--age-limit", "99",
         url,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
