@@ -90,35 +90,68 @@ function JobCard({ job, logs, onCancel }) {
 function ReviewRow({ item, onApprove, onReject, onCorrect }) {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(item.text || '')
+  const [pending, setPending] = useState(null) // 'approving' | 'rejecting' | 'correcting'
+  const [flash, setFlash] = useState(null)     // 'approved' | 'corrected' | 'rejected'
 
-  const handleSave = () => {
+  const triggerFlash = (type) => {
+    setFlash(type)
+    setTimeout(() => setFlash(null), 1200)
+  }
+
+  const saveEditIfNeeded = async () => {
+    if (editing && editText.trim() && editText.trim() !== item.text) {
+      await onCorrect(item.id, editText.trim())
+    }
+    setEditing(false)
+  }
+
+  const handleApproveClick = async () => {
+    await saveEditIfNeeded()
+    setPending('approving')
+    await onApprove(item.id)
+    triggerFlash('approved')
+    setPending(null)
+  }
+
+  const handleRejectClick = async () => {
+    setEditing(false)
+    setPending('rejecting')
+    await onReject(item.id)
+    triggerFlash('rejected')
+    setPending(null)
+  }
+
+  const handleSave = async () => {
     if (editText.trim() && editText.trim() !== item.text) {
-      onCorrect(item.id, editText.trim())
+      setPending('correcting')
+      await onCorrect(item.id, editText.trim())
+      triggerFlash('corrected')
+      setPending(null)
     }
     setEditing(false)
   }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSave()
-    if (e.key === 'Escape') setEditing(false)
+    if (e.key === 'Escape') { setEditing(false); setEditText(item.text || '') }
   }
 
   const audioUrl = `/api/audio/processed/${item.dialect}/${item.id}.wav`
 
+  const flashCls = flash === 'approved' ? 'bg-emerald-900/40'
+    : flash === 'corrected' ? 'bg-blue-900/40'
+    : flash === 'rejected' ? 'bg-red-900/40'
+    : ''
+
   return (
-    <tr className="border-b border-zinc-700 hover:bg-zinc-800/50">
+    <tr className={`border-b border-zinc-700 transition-colors duration-300 ${flashCls || 'hover:bg-zinc-800/50'}`}>
       <td className="px-3 py-2">
         <span className="text-xs px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 capitalize">
           {item.dialect}
         </span>
       </td>
       <td className="px-3 py-2">
-        <audio
-          controls
-          src={audioUrl}
-          className="h-7 w-36"
-          preload="none"
-        />
+        <audio controls src={audioUrl} className="h-7 w-36" preload="none" />
       </td>
       <td className="px-3 py-2 max-w-xs">
         {editing ? (
@@ -126,7 +159,6 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
             dir="rtl"
             value={editText}
             onChange={e => setEditText(e.target.value)}
-            onBlur={handleSave}
             onKeyDown={handleKeyDown}
             autoFocus
             className="w-full bg-zinc-900 border border-emerald-500 rounded px-2 py-1 text-sm text-zinc-100 text-right focus:outline-none"
@@ -135,7 +167,8 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
         ) : (
           <span
             dir="rtl"
-            className="text-sm text-zinc-200 block text-right"
+            className="text-sm text-zinc-200 block text-right cursor-text"
+            title="Click edit to modify"
             style={{ fontFamily: "'Noto Sans Arabic', Arial, sans-serif" }}
           >
             {item.text || '—'}
@@ -148,34 +181,67 @@ function ReviewRow({ item, onApprove, onReject, onCorrect }) {
         </span>
       </td>
       <td className="px-3 py-2">
-        <span className={`text-xs px-2 py-0.5 rounded capitalize ${statusBadgeCls(item.status)}`}>
-          {item.status}
-        </span>
+        {flash ? (
+          <span className={`text-xs px-2 py-0.5 rounded capitalize font-medium ${
+            flash === 'approved' ? 'bg-emerald-900/60 text-emerald-300'
+            : flash === 'corrected' ? 'bg-blue-900/60 text-blue-300'
+            : 'bg-red-900/60 text-red-300'
+          }`}>
+            {flash} ✓
+          </span>
+        ) : (
+          <span className={`text-xs px-2 py-0.5 rounded capitalize ${statusBadgeCls(item.status)}`}>
+            {item.status}
+          </span>
+        )}
       </td>
       <td className="px-3 py-2">
-        <div className="flex gap-1">
-          <button
-            onClick={() => onApprove(item.id)}
-            title="Approve"
-            className="text-xs px-2 py-1 bg-emerald-900/40 hover:bg-emerald-700/50 text-emerald-400 rounded transition-colors"
-          >
-            ✓
-          </button>
-          <button
-            onClick={() => setEditing(true)}
-            title="Edit"
-            className="text-xs px-2 py-1 bg-blue-900/40 hover:bg-blue-700/50 text-blue-400 rounded transition-colors"
-          >
-            ✏
-          </button>
-          <button
-            onClick={() => onReject(item.id)}
-            title="Reject"
-            className="text-xs px-2 py-1 bg-red-900/40 hover:bg-red-700/50 text-red-400 rounded transition-colors"
-          >
-            ✗
-          </button>
-        </div>
+        {editing ? (
+          <div className="flex gap-1">
+            <button
+              onClick={handleSave}
+              disabled={!!pending}
+              title="Save correction"
+              className="text-xs px-2 py-1 bg-emerald-900/40 hover:bg-emerald-700/50 text-emerald-400 rounded transition-colors disabled:opacity-50"
+            >
+              {pending === 'correcting' ? '…' : 'Save'}
+            </button>
+            <button
+              onClick={() => { setEditing(false); setEditText(item.text || '') }}
+              title="Cancel"
+              className="text-xs px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-1">
+            <button
+              onClick={handleApproveClick}
+              disabled={!!pending}
+              title="Approve"
+              className="text-xs px-2 py-1 bg-emerald-900/40 hover:bg-emerald-700/50 text-emerald-400 rounded transition-colors disabled:opacity-50 min-w-[28px]"
+            >
+              {pending === 'approving' ? '…' : '✓'}
+            </button>
+            <button
+              onClick={() => setEditing(true)}
+              disabled={!!pending}
+              title="Edit text"
+              className="text-xs px-2 py-1 bg-blue-900/40 hover:bg-blue-700/50 text-blue-400 rounded transition-colors disabled:opacity-50"
+            >
+              ✏
+            </button>
+            <button
+              onClick={handleRejectClick}
+              disabled={!!pending}
+              title="Reject"
+              className="text-xs px-2 py-1 bg-red-900/40 hover:bg-red-700/50 text-red-400 rounded transition-colors disabled:opacity-50 min-w-[28px]"
+            >
+              {pending === 'rejecting' ? '…' : '✗'}
+            </button>
+          </div>
+        )}
       </td>
     </tr>
   )
@@ -197,6 +263,7 @@ export default function TranscribePanel() {
   const [reviewItems, setReviewItems] = useState([])
   const [reviewTotal, setReviewTotal] = useState(0)
   const [reviewOffset, setReviewOffset] = useState(0)
+  const [savedCount, setSavedCount] = useState(0)
   const REVIEW_LIMIT = 50
 
   const wsRef = useRef(null)
@@ -294,25 +361,29 @@ export default function TranscribePanel() {
     } catch (e) {}
   }
 
+  const removeRowAfterDelay = (clip_id) => {
+    setTimeout(() => {
+      setReviewItems(prev => prev.filter(i => i.id !== clip_id))
+      setReviewTotal(prev => Math.max(0, prev - 1))
+      setSavedCount(prev => prev + 1)
+    }, 1000)
+  }
+
   const handleApprove = async (clip_id) => {
-    try {
-      await api.post(`/transcribe/bulk-approve`, { clip_ids: [clip_id] })
-      setReviewItems(prev => prev.map(i => i.id === clip_id ? { ...i, status: 'transcribed' } : i))
-    } catch (e) {}
+    await api.post(`/transcribe/bulk-approve`, { clip_ids: [clip_id] })
+    removeRowAfterDelay(clip_id)
   }
 
   const handleReject = async (clip_id) => {
-    try {
-      await api.post(`/transcribe/reject/${clip_id}`)
-      setReviewItems(prev => prev.map(i => i.id === clip_id ? { ...i, status: 'rejected' } : i))
-    } catch (e) {}
+    await api.post(`/transcribe/reject/${clip_id}`)
+    setReviewItems(prev => prev.map(i => i.id === clip_id ? { ...i, status: 'rejected' } : i))
+    setSavedCount(prev => prev + 1)
   }
 
   const handleCorrect = async (clip_id, text) => {
-    try {
-      await api.put(`/transcribe/correct/${clip_id}`, { text })
-      setReviewItems(prev => prev.map(i => i.id === clip_id ? { ...i, text, status: 'corrected', is_corrected: true } : i))
-    } catch (e) {}
+    await api.put(`/transcribe/correct/${clip_id}`, { text })
+    setReviewItems(prev => prev.map(i => i.id === clip_id ? { ...i, text, status: 'corrected', is_corrected: true } : i))
+    setSavedCount(prev => prev + 1)
   }
 
   const STATUS_TABS = ['all', 'needs_review', 'corrected', 'rejected']
@@ -396,7 +467,15 @@ export default function TranscribePanel() {
 
       {/* Review table */}
       <div>
-        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Review</p>
+        <div className="flex items-center gap-3 mb-2">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Review</p>
+          <span className="text-xs text-zinc-500">{reviewTotal} total</span>
+          {savedCount > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-400">
+              {savedCount} saved this session
+            </span>
+          )}
+        </div>
 
         {/* Filter bar */}
         <div className="flex flex-wrap gap-3 mb-3 items-center">
