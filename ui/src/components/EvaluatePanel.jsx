@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import api from '../api'
 
-const WS_URL = 'ws://localhost:8000/ws/jobs'
+import { WS_JOBS_URL } from '../config'
+const WS_URL = WS_JOBS_URL
 const MAX_LOG_LINES = 200
 
 const DEFAULT_SENTENCES = [
