@@ -14,6 +14,7 @@ from server.routes import settings, monitor, sources, scrape, process, transcrib
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.init_db()
+    await db.fail_orphaned_jobs()
     yield
 
 

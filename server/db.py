@@ -113,6 +113,17 @@ async def init_db():
         await db.commit()
 
 
+async def fail_orphaned_jobs():
+    """Mark any jobs left in running/cancelling state as failed (process died on restart)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE jobs SET status='failed', error='Process interrupted (server restart)', "
+            "completed_at=? WHERE status IN ('running','cancelling')",
+            (datetime.utcnow().isoformat(),),
+        )
+        await db.commit()
+
+
 async def get_setting(key: str, default: Any = None) -> Any:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT value FROM settings WHERE key = ?", (key,)) as cur:
