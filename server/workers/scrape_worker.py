@@ -45,12 +45,18 @@ async def run_scrape_job(job_id: str, dialect: str | None, source_ids: list[int]
         video_queue = []
         for source in sources:
             try:
-                await _broadcast_log(job_id, f"Listing {source['url']} …")
-                urls = await list_videos(source["url"], source.get("max_videos", 50))
-                for u in urls:
-                    vid = extract_video_id(u) or u.split("/")[-1]
-                    video_queue.append({"url": u, "video_id": vid, "source_id": source["id"], "dialect": source["dialect"]})
-                await _broadcast_log(job_id, f"Found {len(urls)} videos from {source['url']}")
+                if source.get("source_type") == "video":
+                    # Single video — no playlist listing needed
+                    vid = extract_video_id(source["url"]) or source["url"].split("/")[-1]
+                    video_queue.append({"url": source["url"], "video_id": vid, "source_id": source["id"], "dialect": source["dialect"]})
+                    await _broadcast_log(job_id, f"Queued single video: {vid}")
+                else:
+                    await _broadcast_log(job_id, f"Listing {source['url']} …")
+                    urls = await list_videos(source["url"], source.get("max_videos", 50))
+                    for u in urls:
+                        vid = extract_video_id(u) or u.split("/")[-1]
+                        video_queue.append({"url": u, "video_id": vid, "source_id": source["id"], "dialect": source["dialect"]})
+                    await _broadcast_log(job_id, f"Found {len(urls)} videos from {source['url']}")
             except DownloadError as e:
                 await _broadcast_log(job_id, f"ERROR listing {source['url']}: {e}")
 

@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsndfile1 \
     build-essential \
+    nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Python deps — torch/torchaudio already in base image, skip them
