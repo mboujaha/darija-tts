@@ -10,6 +10,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./server:/app/server   # live reload in dev
+      - whisper_cache:/root/.cache  # persist model downloads across rebuilds
     environment:
       - DATA_DIR=/app/data
       - CHECKPOINTS_DIR=/app/data/checkpoints
@@ -37,3 +38,6 @@ services:
     # Vite proxies them to the backend container over the internal Docker network.
     depends_on:
       - backend
+
+volumes:
+  whisper_cache:
