@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Darija TTS API", version="1.0.0", lifespan=lifespan, redirect_slashes=False)
+app = FastAPI(title="Darija TTS API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
