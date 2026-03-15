@@ -43,6 +43,7 @@ def extract_video_id(url: str) -> str | None:
 async def list_videos(url: str, max_videos: int) -> list[str]:
     proc = await asyncio.create_subprocess_exec(
         "yt-dlp", "--flat-playlist", "--print", "url", "--playlist-end", str(max_videos),
+        "--remote-components", "ejs:github",
         *_cookies_args(), url,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -66,6 +67,7 @@ async def download_video(url: str, output_dir: Path, video_id: str) -> tuple[Pat
         "-o", output_template,
         "--no-playlist",
         "--age-limit", "99",
+        "--remote-components", "ejs:github",
         *_cookies_args(),
         url,
         stdout=asyncio.subprocess.PIPE,

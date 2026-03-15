@@ -64,13 +64,18 @@ async def get_cookies_status():
     if present:
         proc = await asyncio.create_subprocess_exec(
             "yt-dlp", "--simulate", "--quiet",
+            "--remote-components", "ejs:github",
             "--cookies", COOKIES_FILE,
             "https://www.youtube.com/watch?v=jNQXAC9IVRw",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        _, _ = await proc.communicate()
-        valid = proc.returncode == 0
+        _, stderr = await proc.communicate()
+        err = stderr.decode().lower()
+        # Treat as valid unless explicitly told to sign in — EJS/format
+        # warnings are not a cookies problem
+        auth_failure = "sign in to confirm" in err or "confirm you" in err
+        valid = proc.returncode == 0 or (present and not auth_failure)
     return {"present": present, "valid": valid}
 
 
