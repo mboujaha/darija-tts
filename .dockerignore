@@ -1,0 +1,17 @@
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.git
+.gitignore
+data/
+checkpoints/
+*.db
+*.sqlite
+ui/node_modules
+ui/dist
+.env
+.env.*
+*.log
+venv/
+.venv/
+.claude/

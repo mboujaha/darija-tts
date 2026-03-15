@@ -3,9 +3,9 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 
-DATA_DIR = str(BASE_DIR / "data")
-CHECKPOINTS_DIR = str(BASE_DIR / "checkpoints")
-CONFIGS_DIR = str(BASE_DIR / "configs")
+DATA_DIR = os.getenv("DATA_DIR", str(BASE_DIR / "data"))
+CHECKPOINTS_DIR = os.getenv("CHECKPOINTS_DIR", str(BASE_DIR / "checkpoints"))
+CONFIGS_DIR = os.getenv("CONFIGS_DIR", str(BASE_DIR / "configs"))
 
 SAMPLE_RATE = 22050
 OUTPUT_SAMPLE_RATE = 24000
@@ -27,7 +27,7 @@ HF_TOKEN = os.getenv("HF_TOKEN", "")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
 
-DB_PATH = str(BASE_DIR / "darija_tts.db")
+DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "darija_tts.db"))
 
 # Ensure data directories exist
 for subdir in ["raw", "processed", "transcribed", "corrections", "dataset", "reference_speakers", "generated", "evaluations"]:

@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: darija-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./server:/app/server   # live reload in dev
+    environment:
+      - DATA_DIR=/app/data
+      - CHECKPOINTS_DIR=/app/data/checkpoints
+      - DB_PATH=/app/data/darija_tts.db
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  frontend:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: darija-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./ui/src:/app/src       # live reload in dev
+    depends_on:
+      - backend
