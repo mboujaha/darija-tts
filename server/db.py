@@ -661,19 +661,28 @@ async def get_clips_for_dataset(
     dialect: str = None,
     min_duration: float = 3.0,
     max_duration: float = 11.0,
+    statuses: list = None,
+    min_confidence: float = 0.0,
 ) -> list:
-    conditions = ["c.status IN ('transcribed', 'corrected')", "c.duration >= ?", "c.duration <= ?"]
-    params: list = [min_duration, max_duration]
+    if not statuses:
+        statuses = ['transcribed', 'corrected', 'approved']
+    placeholders = ','.join('?' * len(statuses))
+    conditions = [
+        f"c.status IN ({placeholders})",
+        "c.duration >= ?",
+        "c.duration <= ?",
+        "t.confidence >= ?",
+    ]
+    params: list = [*statuses, min_duration, max_duration, min_confidence]
     if dialect:
         conditions.append("c.dialect = ?")
         params.append(dialect)
-    where = " AND ".join(conditions)
     query = f"""
         SELECT c.id, c.dialect, c.speaker, c.file_path, c.duration, c.snr,
                t.text, t.confidence
         FROM clips c
         JOIN transcriptions t ON t.clip_id = c.id
-        WHERE {where}
+        WHERE {' AND '.join(conditions)}
         ORDER BY c.snr DESC
     """
     async with aiosqlite.connect(DB_PATH) as db:
@@ -683,16 +692,21 @@ async def get_clips_for_dataset(
     return [dict(r) for r in rows]
 
 
-async def get_dataset_stats() -> dict:
+async def get_dataset_stats(statuses: list = None, min_confidence: float = 0.0) -> dict:
+    if not statuses:
+        statuses = ['transcribed', 'corrected', 'approved']
+    placeholders = ','.join('?' * len(statuses))
+    params: list = [*statuses, min_confidence]
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
-            """
+            f"""
             SELECT c.dialect, c.speaker, COUNT(*) as clips, COALESCE(SUM(c.duration), 0) as secs
             FROM clips c
             JOIN transcriptions t ON t.clip_id = c.id
-            WHERE c.status IN ('transcribed', 'corrected')
+            WHERE c.status IN ({placeholders}) AND t.confidence >= ?
             GROUP BY c.dialect, c.speaker
-            """
+            """,
+            params,
         ) as cur:
             rows = await cur.fetchall()
 
@@ -728,19 +742,23 @@ async def get_dataset_stats() -> dict:
     }
 
 
-async def get_dataset_preview(limit: int = 10) -> list:
+async def get_dataset_preview(limit: int = 10, statuses: list = None, min_confidence: float = 0.0) -> list:
+    if not statuses:
+        statuses = ['transcribed', 'corrected', 'approved']
+    placeholders = ','.join('?' * len(statuses))
+    params: list = [*statuses, min_confidence, limit]
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            """
+            f"""
             SELECT c.id, c.dialect, c.speaker, c.file_path, c.duration, c.snr, t.text
             FROM clips c
             JOIN transcriptions t ON t.clip_id = c.id
-            WHERE c.status IN ('transcribed', 'corrected')
+            WHERE c.status IN ({placeholders}) AND t.confidence >= ?
             ORDER BY RANDOM()
             LIMIT ?
             """,
-            (limit,),
+            params,
         ) as cur:
             rows = await cur.fetchall()
     return [dict(r) for r in rows]

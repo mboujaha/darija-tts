@@ -29,10 +29,15 @@ async def run_dataset_job(job_id: str, dialect: str | None, config: dict):
     min_duration = config.get("min_duration", 3.0)
     max_duration = config.get("max_duration", 11.0)
     min_speaker_clips = config.get("min_speaker_clips", 20)
+    statuses = config.get("statuses", ["approved", "corrected"])
+    min_confidence = config.get("min_confidence", 0.0)
     output_dir = str(Path(DATA_DIR) / "dataset")
 
     try:
-        clips = await db.get_clips_for_dataset(dialect, min_duration, max_duration)
+        clips = await db.get_clips_for_dataset(
+            dialect, min_duration, max_duration,
+            statuses=statuses, min_confidence=min_confidence
+        )
         if not clips:
             await db.update_job(job_id, status="completed", progress=1.0,
                                 message="No eligible clips found",

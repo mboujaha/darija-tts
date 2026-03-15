@@ -16,6 +16,8 @@ class DatasetBuild(BaseModel):
     min_duration: float = DEFAULT_MIN_DURATION
     max_duration: float = DEFAULT_MAX_DURATION
     min_speaker_clips: int = DEFAULT_MIN_SPEAKER_CLIPS
+    statuses: list[str] = ['approved', 'corrected']
+    min_confidence: float = 0.0
 
 
 @router.post("/build")
@@ -26,6 +28,8 @@ async def build_dataset(body: DatasetBuild, background_tasks: BackgroundTasks):
         "min_duration": body.min_duration,
         "max_duration": body.max_duration,
         "min_speaker_clips": body.min_speaker_clips,
+        "statuses": body.statuses,
+        "min_confidence": body.min_confidence,
     }
     await db.create_job(job_id, job_type="build_dataset", config=config)
     background_tasks.add_task(run_dataset_job, job_id, body.dialect, config)

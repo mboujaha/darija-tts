@@ -89,6 +89,10 @@ export default function DatasetPanel() {
   const [minDuration, setMinDuration] = useState(3.0)
   const [maxDuration, setMaxDuration] = useState(11.0)
   const [minSpeakerClips, setMinSpeakerClips] = useState(20)
+  const [includeApproved, setIncludeApproved] = useState(true)
+  const [includeCorrected, setIncludeCorrected] = useState(true)
+  const [includeTranscribed, setIncludeTranscribed] = useState(false)
+  const [minConfidence, setMinConfidence] = useState(0.0)
   const [jobs, setJobs] = useState([])
   const [logs, setLogs] = useState({})
   const [stats, setStats] = useState(null)
@@ -164,6 +168,12 @@ export default function DatasetPanel() {
     })
   }, [jobs])
 
+  const selectedStatuses = [
+    includeApproved    && 'approved',
+    includeCorrected   && 'corrected',
+    includeTranscribed && 'transcribed',
+  ].filter(Boolean)
+
   const startBuild = async () => {
     setStarting(true)
     try {
@@ -171,6 +181,8 @@ export default function DatasetPanel() {
         min_duration: minDuration,
         max_duration: maxDuration,
         min_speaker_clips: minSpeakerClips,
+        statuses: selectedStatuses,
+        min_confidence: minConfidence,
       }
       if (dialect) body.dialect = dialect
       const r = await api.post('/dataset/build', body)
@@ -301,6 +313,39 @@ export default function DatasetPanel() {
           />
         </div>
 
+        {/* Source clips */}
+        <div>
+          <label className="block text-xs font-medium text-zinc-400 mb-2">Source Clips</label>
+          <div className="flex flex-col gap-2 mb-3">
+            {[
+              ['approved',    'Approved',             includeApproved,    setIncludeApproved],
+              ['corrected',   'Corrected',            includeCorrected,   setIncludeCorrected],
+              ['transcribed', 'Transcribed (unreviewed)', includeTranscribed, setIncludeTranscribed],
+            ].map(([id, label, checked, setter]) => (
+              <label key={id} className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={e => setter(e.target.checked)}
+                  className="accent-emerald-500 w-3.5 h-3.5"
+                />
+                <span className="text-sm text-zinc-300">{label}</span>
+              </label>
+            ))}
+          </div>
+          {selectedStatuses.length === 0 && (
+            <p className="text-xs text-red-400 mb-2">Select at least one status</p>
+          )}
+          <label className="block text-xs font-medium text-zinc-400 mb-1">
+            Min Confidence: <span className="text-zinc-200">{Math.round(minConfidence * 100)}%</span>
+          </label>
+          <input
+            type="range" min={0} max={1} step={0.05} value={minConfidence}
+            onChange={e => setMinConfidence(Number(e.target.value))}
+            className="w-full accent-emerald-500"
+          />
+        </div>
+
         {/* Speaker threshold warning */}
         {speakerWarning && (
           <div className="flex items-start gap-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg px-3 py-2.5">
@@ -321,7 +366,7 @@ export default function DatasetPanel() {
 
         <button
           onClick={startBuild}
-          disabled={starting}
+          disabled={starting || selectedStatuses.length === 0}
           className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded transition-colors disabled:opacity-50"
         >
           {starting ? 'Starting…' : 'Build Dataset'}
