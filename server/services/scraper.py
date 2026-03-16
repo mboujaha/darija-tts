@@ -67,6 +67,8 @@ async def download_video(url: str, output_dir: Path, video_id: str) -> tuple[Pat
         "-o", output_template,
         "--no-playlist",
         "--age-limit", "99",
+        "--sleep-interval", "3",
+        "--max-sleep-interval", "8",
         "--remote-components", "ejs:github",
         *_cookies_args(),
         url,
@@ -86,7 +88,7 @@ async def download_video(url: str, output_dir: Path, video_id: str) -> tuple[Pat
             raise GeoBlockedError(f"Geo-blocked: {video_id}")
         if "video unavailable" in lower or "private video" in lower or "has been removed" in lower:
             raise VideoUnavailableError(f"Video unavailable: {video_id}")
-        raise DownloadError(f"Download failed for {video_id}: {combined[:300]}")
+        raise DownloadError(f"Download failed for {video_id}: {combined[:1000]}")
 
     wav_path = output_dir / f"{video_id}.wav"
     if not wav_path.exists():
