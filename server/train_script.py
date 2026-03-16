@@ -197,6 +197,7 @@ def run(config: dict):
         save_n_checkpoints=2,
         save_checkpoints=True,
         print_eval=False,
+        mixed_precision=True,
         optimizer="AdamW",
         optimizer_wd_only_on_weights=True,
         optimizer_params={"betas": [0.9, 0.96], "eps": 1e-8, "weight_decay": 1e-2},
