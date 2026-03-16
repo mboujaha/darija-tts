@@ -81,7 +81,8 @@ def ensure_model_loaded(checkpoint_dir: Optional[str] = None) -> tuple:
 
     model = Xtts.init_from_config(cfg)
     if fine_tuned_pth:
-        model.load_checkpoint(cfg, checkpoint_path=fine_tuned_pth, eval=True)
+        # checkpoint_dir provides vocab.json/speaker encoder; checkpoint_path overrides model weights
+        model.load_checkpoint(cfg, checkpoint_dir=str(base_model_dir), checkpoint_path=fine_tuned_pth, eval=True)
     else:
         model.load_checkpoint(cfg, checkpoint_dir=resolved_dir, eval=True)
 
