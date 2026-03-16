@@ -1,17 +1,14 @@
 import asyncio
 import os
-import tempfile
 import time
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from server.config import DATA_DIR, CHECKPOINTS_DIR
 from server.services.exporter import (
     build_dataset_zip,
-    build_checkpoint_tar,
     dataset_stats,
     FORMATS,
 )
@@ -35,7 +32,7 @@ def _cleanup(path: str):
 @router.get("/stats")
 async def get_export_stats():
     """Return dataset readiness info before committing to a ZIP build."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     stats = await loop.run_in_executor(None, lambda: dataset_stats(DATASET_DIR))
     checkpoints = get_checkpoints(CHECKPOINTS_DIR)
     return {"dataset": stats, "checkpoints": checkpoints}
@@ -57,7 +54,7 @@ async def export_dataset(
     filename = f"darija_dataset_{fmt}_{int(time.time())}.zip"
     output_path = str(Path(EXPORT_TMP) / filename)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         info = await loop.run_in_executor(
             None,
@@ -77,33 +74,52 @@ async def export_dataset(
 
 
 @router.get("/checkpoint/{run_id}")
-async def export_checkpoint(run_id: str, background_tasks: BackgroundTasks):
-    """Download a trained checkpoint directory as a .tar.gz."""
-    # Validate run_id is safe
+async def export_checkpoint(run_id: str):
+    """Stream a trained checkpoint as a .tar.gz (best_model + config + vocab)."""
     if "/" in run_id or "\\" in run_id or ".." in run_id:
         raise HTTPException(400, detail="Invalid run_id")
 
-    run_dir = str(Path(CHECKPOINTS_DIR) / run_id)
-    if not Path(run_dir).exists():
+    run_dir = Path(CHECKPOINTS_DIR) / run_id
+    if not run_dir.exists():
         raise HTTPException(404, detail=f"Checkpoint '{run_id}' not found")
 
-    filename = f"{run_id}_{int(time.time())}.tar.gz"
-    output_path = str(Path(EXPORT_TMP) / filename)
+    # Only pack best_model.pth + config.json + vocab.json — not all periodic
+    # checkpoints which can add several extra GB to the download.
+    checkpoints = get_checkpoints(CHECKPOINTS_DIR)
+    ckpt_info = next((c for c in checkpoints if c["run_id"] == run_id), None)
+    best_model_path = ckpt_info["best_model"] if ckpt_info else None
 
-    loop = asyncio.get_event_loop()
-    try:
-        await loop.run_in_executor(
-            None,
-            lambda: build_checkpoint_tar(run_dir, output_path),
+    if best_model_path:
+        best = Path(best_model_path)
+        rel_paths = [str(best.relative_to(CHECKPOINTS_DIR))]
+        for fname in ("config.json", "vocab.json"):
+            p = best.parent / fname
+            if p.exists():
+                rel_paths.append(str(p.relative_to(CHECKPOINTS_DIR)))
+    else:
+        rel_paths = [run_id]
+
+    filename = f"{run_id}.tar.gz"
+
+    async def stream_tar():
+        # create_subprocess_exec (not shell=True) — no injection risk.
+        # run_id is validated above; rel_paths come from resolved Path objects.
+        proc = await asyncio.create_subprocess_exec(
+            "tar", "-czf", "-", "-C", CHECKPOINTS_DIR, *rel_paths,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
         )
-    except Exception as e:
-        raise HTTPException(500, detail=f"Export failed: {e}")
+        try:
+            while True:
+                chunk = await proc.stdout.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            await proc.wait()
 
-    background_tasks.add_task(_cleanup, output_path)
-
-    return FileResponse(
-        path=output_path,
-        filename=filename,
+    return StreamingResponse(
+        stream_tar(),
         media_type="application/gzip",
-        background=background_tasks,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

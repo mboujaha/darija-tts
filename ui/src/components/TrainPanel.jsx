@@ -215,11 +215,22 @@ function RunCard({ run }) {
             </div>
           )}
 
-          {/* Checkpoint path */}
+          {/* Checkpoint path + download */}
           {run.checkpoint_path && (
-            <p className="text-xs text-zinc-500 font-mono truncate">
-              Checkpoint: {run.checkpoint_path}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-zinc-500 font-mono truncate">
+                {run.checkpoint_path}
+              </p>
+              {run.status === 'completed' && (
+                <a
+                  href={`/api/train/checkpoints/${run.id}/download`}
+                  download
+                  className="flex-shrink-0 text-xs px-2 py-1 bg-zinc-700 hover:bg-emerald-900/40 text-zinc-400 hover:text-emerald-400 rounded transition-colors"
+                >
+                  Download .pth
+                </a>
+              )}
+            </div>
           )}
         </div>
       )}

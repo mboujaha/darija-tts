@@ -2,6 +2,7 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from server import db
@@ -105,3 +106,16 @@ async def list_checkpoints():
     completed_runs = {r["id"] for r in await db.get_training_runs(limit=200) if r.get("status") == "completed"}
     checkpoints = [c for c in checkpoints if c["run_id"] in completed_runs]
     return {"checkpoints": checkpoints}
+
+
+@router.get("/checkpoints/{run_id}/download")
+async def download_checkpoint(run_id: str):
+    checkpoints = get_checkpoints(CHECKPOINTS_DIR)
+    ckpt = next((c for c in checkpoints if c["run_id"] == run_id), None)
+    if ckpt is None:
+        raise HTTPException(404, detail="No checkpoint found for this run")
+    return FileResponse(
+        ckpt["best_model"],
+        media_type="application/octet-stream",
+        filename=f"{run_id}_best_model.pth",
+    )

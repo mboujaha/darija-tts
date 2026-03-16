@@ -10,11 +10,9 @@ No new dependencies — stdlib zipfile + tarfile only.
 """
 
 import json
-import os
 import tarfile
 import zipfile
 from pathlib import Path
-from typing import Optional
 
 
 # ── Helpers ────────────────────────────────────────────────────
@@ -184,6 +182,7 @@ def build_checkpoint_tar(
         "size_mb": round(size_bytes / 1024 / 1024, 1),
         "run_id": src.name,
     }
+
 
 
 def dataset_stats(dataset_dir: str) -> dict:
