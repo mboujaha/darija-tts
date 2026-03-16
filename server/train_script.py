@@ -48,6 +48,17 @@ def run(config: dict):
     training_type = config.get("training_type", "full")
     base_checkpoint = config.get("base_checkpoint") or None
 
+    # Free any CUDA memory from previous crashed runs before starting
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
+            free_gb = torch.cuda.mem_get_info()[0] / 1024**3
+            info(f"GPU free memory: {free_gb:.1f} GB")
+    except Exception:
+        pass
+
     info(f"Run ID: {run_id}")
     info(f"Epochs: {epochs} | Batch: {batch_size} | Grad accum: {grad_accum} | LR: {lr}")
     info(f"Training type: {training_type}")
@@ -261,6 +272,9 @@ def run(config: dict):
                         loss_val = loss_dict.get("loss") or loss_dict.get("avg_loss")
                         if loss_val is not None:
                             loss_val = float(loss_val)
+                            import math
+                            if math.isnan(loss_val) or math.isinf(loss_val):
+                                loss_val = None  # GradScaler skipped this step
                 if loss_val is not None and (
                     _state["best_loss"] is None or loss_val < _state["best_loss"]
                 ):
