@@ -104,6 +104,7 @@ def run(config: dict):
     else:
         info("Downloading XTTS v2 base model (this may take a while)…")
         try:
+            os.environ["COQUI_TOS_AGREED"] = "1"
             from TTS.utils.manage import ModelManager
             manager = ModelManager()
             model_path, cfg_path, _ = manager.download_model(
