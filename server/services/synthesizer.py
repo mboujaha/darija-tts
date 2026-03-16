@@ -44,6 +44,10 @@ def ensure_model_loaded(checkpoint_dir: Optional[str] = None) -> tuple:
         ) from e
 
     resolved_dir = checkpoint_dir
+    fine_tuned_pth = None  # path to a specific .pth for fine-tuned models
+
+    # Resolve base model dir (always needed for config.json)
+    base_model_dir = Path.home() / ".local/share/tts/tts_models--multilingual--multi-dataset--xtts_v2"
 
     if not resolved_dir or not Path(resolved_dir).exists():
         # Download / locate base XTTS v2 model
@@ -53,17 +57,33 @@ def ensure_model_loaded(checkpoint_dir: Optional[str] = None) -> tuple:
             model_path, cfg_path, _ = manager.download_model(
                 "tts_models/multilingual/multi-dataset/xtts_v2"
             )
-            resolved_dir = str(Path(model_path).parent)
+            resolved_dir = str(Path(model_path).parent if not Path(model_path).is_dir() else Path(model_path))
+            base_model_dir = Path(resolved_dir)
         except Exception as e:
             raise RuntimeError(f"Could not obtain XTTS v2 base model: {e}") from e
+    else:
+        # Fine-tuned run dir: find the best .pth nested inside it
+        run_path = Path(resolved_dir)
+        pth_files = list(run_path.glob("**/*.pth"))
+        if pth_files:
+            fine_tuned_pth = str(max(pth_files, key=lambda p: p.stat().st_mtime))
+        # Fall back to cached base model for config.json if not present locally
+        if not base_model_dir.exists():
+            base_model_dir = run_path
 
     cfg = XttsConfig()
-    cfg_json = Path(resolved_dir) / "config.json"
+    # Always prefer base model config.json (fine-tuned models don't ship one)
+    cfg_json = base_model_dir / "config.json"
+    if not cfg_json.exists():
+        cfg_json = Path(resolved_dir) / "config.json"
     if cfg_json.exists():
         cfg.load_json(str(cfg_json))
 
     model = Xtts.init_from_config(cfg)
-    model.load_checkpoint(cfg, checkpoint_dir=resolved_dir, eval=True)
+    if fine_tuned_pth:
+        model.load_checkpoint(cfg, checkpoint_path=fine_tuned_pth, eval=True)
+    else:
+        model.load_checkpoint(cfg, checkpoint_dir=resolved_dir, eval=True)
 
     # Move to GPU if available
     try:
