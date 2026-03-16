@@ -21,6 +21,9 @@ import sys
 import traceback
 from pathlib import Path
 
+# Auto-accept Coqui TOS for non-interactive environments
+os.environ["COQUI_TOS_AGREED"] = "1"
+
 
 def emit(data: dict):
     print(json.dumps(data, ensure_ascii=False), flush=True)
@@ -32,28 +35,6 @@ def info(msg: str):
 
 def error(msg: str):
     emit({"type": "error", "line": msg})
-
-
-def load_samples(csv_path: str, dataset_dir: str) -> list:
-    samples = []
-    with open(csv_path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("audio_file"):
-                continue
-            parts = line.split("|", 2)
-            if len(parts) < 3:
-                continue
-            audio_rel, text, speaker = parts
-            audio_abs = str(Path(dataset_dir) / audio_rel)
-            samples.append({
-                "audio_file": audio_abs,
-                "text": text.strip(),
-                "speaker_name": speaker.strip(),
-                "language": "ar",
-                "root_path": dataset_dir,
-            })
-    return samples
 
 
 def run(config: dict):
@@ -78,81 +59,184 @@ def run(config: dict):
         error(f"metadata_train.csv not found at {train_csv}. Run Dataset Builder first.")
         sys.exit(1)
 
-    train_samples = load_samples(str(train_csv), dataset_dir)
-    eval_samples = load_samples(str(eval_csv), dataset_dir) if eval_csv.exists() else []
+    # Count samples for a quick sanity check
+    def count_csv(path):
+        if not Path(path).exists():
+            return 0
+        with open(path) as f:
+            return sum(1 for l in f if l.strip() and not l.startswith("audio_file"))
 
-    if not train_samples:
+    n_train = count_csv(train_csv)
+    n_eval = count_csv(eval_csv)
+    if n_train == 0:
         error("No training samples found. Check metadata_train.csv.")
         sys.exit(1)
-
-    info(f"Loaded {len(train_samples)} train samples, {len(eval_samples)} eval samples")
+    info(f"Loaded {n_train} train samples, {n_eval} eval samples")
 
     # --- Import Coqui TTS ---
     try:
-        from TTS.tts.configs.xtts_config import XttsConfig
-        from TTS.tts.models.xtts import Xtts
         from trainer import Trainer, TrainerArgs
+        from TTS.config.shared_configs import BaseDatasetConfig
+        from TTS.tts.datasets import load_tts_samples
+        from TTS.tts.layers.xtts.trainer.gpt_trainer import (
+            GPTArgs, GPTTrainer, GPTTrainerConfig, XttsAudioConfig,
+        )
+        from TTS.utils.manage import ModelManager
     except ImportError as e:
         error(f"Coqui TTS not installed: {e}")
         error("Install with: pip install TTS")
         sys.exit(2)
 
-    # --- Resolve base checkpoint ---
-    if base_checkpoint and Path(base_checkpoint).exists():
-        checkpoint_dir = base_checkpoint
-        info(f"Using local checkpoint: {checkpoint_dir}")
+    # --- Resolve base checkpoint files ---
+    model_dir_default = Path.home() / ".local/share/tts/tts_models--multilingual--multi-dataset--xtts_v2"
+
+    if base_checkpoint and Path(base_checkpoint).is_dir():
+        model_dir = Path(base_checkpoint)
+        info(f"Using local checkpoint: {model_dir}")
+    elif model_dir_default.exists():
+        model_dir = model_dir_default
+        info(f"Using cached model at {model_dir}")
     else:
         info("Downloading XTTS v2 base model (this may take a while)…")
         try:
-            os.environ["COQUI_TOS_AGREED"] = "1"
-            from TTS.utils.manage import ModelManager
-            manager = ModelManager()
-            model_path, cfg_path, _ = manager.download_model(
+            model_path, _, _ = ModelManager().download_model(
                 "tts_models/multilingual/multi-dataset/xtts_v2"
             )
-            # download_model returns the model dir (containing model.pth), not a file path
-            checkpoint_dir = str(Path(model_path) if Path(model_path).is_dir() else Path(model_path).parent)
-            info(f"Base model ready at {checkpoint_dir}")
+            model_dir = Path(model_path) if Path(model_path).is_dir() else Path(model_path).parent
+            info(f"Base model ready at {model_dir}")
         except Exception as e:
             error(f"Failed to obtain base model: {e}")
             sys.exit(3)
 
-    # --- Build config ---
-    cfg = XttsConfig()
-    base_cfg_json = Path(checkpoint_dir) / "config.json"
-    if base_cfg_json.exists():
-        cfg.load_json(str(base_cfg_json))
+    # DVAE + mel_norm are required by GPTArgs but not bundled with the model download.
+    # Cache them alongside the model.
+    dvae_path = model_dir / "dvae.pth"
+    mel_norm_path = model_dir / "mel_stats.pth"
 
-    cfg.epochs = epochs
-    cfg.batch_size = batch_size
-    cfg.eval_batch_size = 1
-    cfg.num_loader_workers = 4
-    cfg.num_eval_loader_workers = 1
-    cfg.run_eval = len(eval_samples) > 0
-    cfg.test_delay_epochs = -1
-    cfg.print_step = 50
-    cfg.plot_step = 100
-    cfg.save_step = 10000
-    cfg.save_n_checkpoints = 2
-    cfg.save_checkpoints = True
-    cfg.save_best_after = 0
-    cfg.lr = lr
-    cfg.grad_accumulation_steps = grad_accum
+    if not dvae_path.exists() or not mel_norm_path.exists():
+        info("Downloading DVAE and mel-norm files…")
+        try:
+            ModelManager._download_model_files(
+                [
+                    "https://coqui.gateway.scarf.sh/hf-coqui/XTTS-v2/main/dvae.pth",
+                    "https://coqui.gateway.scarf.sh/hf-coqui/XTTS-v2/main/mel_stats.pth",
+                ],
+                str(model_dir),
+                progress_bar=False,
+            )
+        except Exception as e:
+            error(f"Failed to download auxiliary model files: {e}")
+            sys.exit(3)
 
+    xtts_checkpoint = str(model_dir / "model.pth")
+    tokenizer_file = str(model_dir / "vocab.json")
+    dvae_checkpoint = str(dvae_path)
+    mel_norm_file = str(mel_norm_path)
+
+    # --- Output path ---
     out_path = Path(output_dir) / run_id
     out_path.mkdir(parents=True, exist_ok=True)
 
-    # --- Load model ---
-    info("Loading XTTS v2 base model weights…")
+    # --- Dataset config ---
+    dataset_cfg = BaseDatasetConfig(
+        formatter="coqui",
+        dataset_name="darija_ft",
+        path=dataset_dir,
+        meta_file_train=str(train_csv),
+        meta_file_val=str(eval_csv) if eval_csv.exists() else "",
+        language="ar",
+    )
+
+    # --- GPT model args ---
+    model_args = GPTArgs(
+        max_conditioning_length=132300,   # 6 s at 22050 Hz
+        min_conditioning_length=66150,    # 3 s
+        debug_loading_failures=False,
+        max_wav_length=255995,            # ~11.6 s
+        max_text_length=200,
+        mel_norm_file=mel_norm_file,
+        dvae_checkpoint=dvae_checkpoint,
+        xtts_checkpoint=xtts_checkpoint,
+        tokenizer_file=tokenizer_file,
+        gpt_num_audio_tokens=1026,
+        gpt_start_audio_token=1024,
+        gpt_stop_audio_token=1025,
+        gpt_use_masking_gt_prompt_approach=True,
+        gpt_use_perceiver_resampler=True,
+    )
+
+    audio_config = XttsAudioConfig(
+        sample_rate=22050,
+        dvae_sample_rate=22050,
+        output_sample_rate=24000,
+    )
+
+    # --- Freeze encoder if requested ---
+    # GPTTrainer only trains the GPT component by default; full fine-tune
+    # means we allow all GPT weights. "freeze_encoder" is handled via the
+    # optimizer targeting only GPT weights — which GPTTrainer already does.
+    # We flag it in the run name for visibility.
+    run_name = f"XTTS_FT_{'freeze' if training_type == 'freeze_encoder' else 'full'}"
+
+    train_cfg = GPTTrainerConfig(
+        epochs=epochs,
+        output_path=str(out_path),
+        model_args=model_args,
+        run_name=run_name,
+        project_name="darija_xtts",
+        audio=audio_config,
+        batch_size=batch_size,
+        batch_group_size=48,
+        eval_batch_size=max(1, batch_size // 2),
+        num_loader_workers=4,
+        eval_split_max_size=256,
+        print_step=50,
+        plot_step=100,
+        log_model_step=1000,
+        save_step=1000,
+        save_n_checkpoints=2,
+        save_checkpoints=True,
+        print_eval=False,
+        optimizer="AdamW",
+        optimizer_wd_only_on_weights=True,
+        optimizer_params={"betas": [0.9, 0.96], "eps": 1e-8, "weight_decay": 1e-2},
+        lr=lr,
+        lr_scheduler="MultiStepLR",
+        lr_scheduler_params={
+            "milestones": [50000 * 18, 150000 * 18, 300000 * 18],
+            "gamma": 0.5,
+            "last_epoch": -1,
+        },
+        test_sentences=[],
+        start_with_eval=False,
+    )
+
+    # --- Load samples ---
+    info("Loading dataset samples…")
     try:
-        model = Xtts.init_from_config(cfg)
-        model.load_checkpoint(cfg, checkpoint_dir=checkpoint_dir, eval=True)
+        train_samples, eval_samples = load_tts_samples(
+            [dataset_cfg],
+            eval_split=True,
+            eval_split_max_size=train_cfg.eval_split_max_size,
+            eval_split_size=train_cfg.eval_split_size,
+        )
     except Exception as e:
-        error(f"Failed to load model: {e}")
+        error(f"Failed to load dataset: {e}")
         traceback.print_exc()
         sys.exit(4)
 
-    # --- Freeze layers for non-full training ---
+    info(f"Dataset ready: {len(train_samples)} train, {len(eval_samples)} eval")
+
+    # --- Init model ---
+    info("Initialising GPTTrainer model…")
+    try:
+        model = GPTTrainer.init_from_config(train_cfg)
+    except Exception as e:
+        error(f"Failed to init model: {e}")
+        traceback.print_exc()
+        sys.exit(4)
+
+    # --- Freeze encoder layers if requested ---
     if training_type == "freeze_encoder":
         frozen = 0
         for name, param in model.named_parameters():
@@ -161,24 +245,22 @@ def run(config: dict):
                 frozen += 1
         info(f"Freeze-encoder mode: {frozen} parameter tensors frozen")
 
-    info("Initialising trainer…")
-
-    # Track progress via closure
+    # --- Progress-tracking trainer ---
     _state = {"step": 0, "best_loss": None, "checkpoint_path": None}
 
-    # Patch the trainer's log method to capture step-level losses
-    # We subclass Trainer to intercept fit_step output
     class ProgressTrainer(Trainer):
         def train_step(self, batch, criterion, optimizer_idx):
             result = super().train_step(batch, criterion, optimizer_idx)
             _state["step"] += 1
-            if _state["step"] % cfg.print_step == 0:
+            if _state["step"] % train_cfg.print_step == 0:
                 loss_val = None
                 if isinstance(result, dict):
                     loss_val = result.get("loss")
                     if loss_val is not None:
                         loss_val = float(loss_val)
-                if _state["best_loss"] is None or (loss_val and loss_val < _state["best_loss"]):
+                if loss_val is not None and (
+                    _state["best_loss"] is None or loss_val < _state["best_loss"]
+                ):
                     _state["best_loss"] = loss_val
                 emit({
                     "epoch": self.epochs_done,
@@ -210,6 +292,7 @@ def run(config: dict):
                 "checkpoint_path": ckpt,
             })
 
+    info("Initialising trainer…")
     try:
         trainer = ProgressTrainer(
             TrainerArgs(
@@ -218,7 +301,7 @@ def run(config: dict):
                 start_with_eval=False,
                 grad_accum_steps=grad_accum,
             ),
-            cfg,
+            train_cfg,
             output_path=str(out_path),
             model=model,
             train_samples=train_samples,
