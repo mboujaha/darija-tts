@@ -102,4 +102,6 @@ async def get_run_loss(run_id: str):
 @router.get("/checkpoints")
 async def list_checkpoints():
     checkpoints = get_checkpoints(CHECKPOINTS_DIR)
+    completed_runs = {r["id"] for r in await db.get_training_runs(limit=200) if r.get("status") == "completed"}
+    checkpoints = [c for c in checkpoints if c["run_id"] in completed_runs]
     return {"checkpoints": checkpoints}

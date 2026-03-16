@@ -17,6 +17,7 @@ from server.services.synthesizer import (
     list_generated,
     unload_model,
 )
+from server import db
 from server.services.trainer import get_checkpoints
 
 router = APIRouter(prefix="/api/synthesize", tags=["synthesize"])
@@ -65,6 +66,8 @@ async def get_voices():
 @router.get("/checkpoints")
 async def get_checkpoints_list():
     checkpoints = get_checkpoints(CHECKPOINTS_DIR)
+    completed_runs = {r["id"] for r in await db.get_training_runs(limit=200) if r.get("status") == "completed"}
+    checkpoints = [c for c in checkpoints if c["run_id"] in completed_runs]
     return {"checkpoints": checkpoints}
 
 
