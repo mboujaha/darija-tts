@@ -110,7 +110,8 @@ def run(config: dict):
             model_path, cfg_path, _ = manager.download_model(
                 "tts_models/multilingual/multi-dataset/xtts_v2"
             )
-            checkpoint_dir = str(Path(model_path).parent)
+            # download_model returns the model dir (containing model.pth), not a file path
+            checkpoint_dir = str(Path(model_path) if Path(model_path).is_dir() else Path(model_path).parent)
             info(f"Base model ready at {checkpoint_dir}")
         except Exception as e:
             error(f"Failed to obtain base model: {e}")
