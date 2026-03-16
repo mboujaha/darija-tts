@@ -248,36 +248,41 @@ def run(config: dict):
     _state = {"step": 0, "best_loss": None, "checkpoint_path": None}
 
     class ProgressTrainer(Trainer):
-        def train_step(self, batch, criterion, optimizer_idx):
-            result = super().train_step(batch, criterion, optimizer_idx)
-            _state["step"] += 1
-            if _state["step"] % train_cfg.print_step == 0:
+        def train_step(self, batch, batch_n_steps, step, loader_start_time):
+            result = super().train_step(batch, batch_n_steps, step, loader_start_time)
+            _state["step"] = step
+            if step % train_cfg.print_step == 0:
                 loss_val = None
-                if isinstance(result, dict):
-                    loss_val = result.get("loss")
-                    if loss_val is not None:
-                        loss_val = float(loss_val)
+                # result is (outputs_dict, loss_dict)
+                if isinstance(result, (list, tuple)) and len(result) >= 2:
+                    loss_dict = result[1]
+                    if isinstance(loss_dict, dict):
+                        loss_val = loss_dict.get("loss") or loss_dict.get("avg_loss")
+                        if loss_val is not None:
+                            loss_val = float(loss_val)
                 if loss_val is not None and (
                     _state["best_loss"] is None or loss_val < _state["best_loss"]
                 ):
                     _state["best_loss"] = loss_val
                 emit({
                     "epoch": self.epochs_done,
-                    "step": _state["step"],
+                    "step": step,
                     "train_loss": loss_val,
                 })
             return result
 
-        def eval_step(self, batch, criterion, optimizer_idx):
-            result = super().eval_step(batch, criterion, optimizer_idx)
-            if isinstance(result, dict):
-                eval_loss = result.get("loss")
-                if eval_loss is not None:
-                    emit({
-                        "epoch": self.epochs_done,
-                        "step": _state["step"],
-                        "eval_loss": float(eval_loss),
-                    })
+        def eval_step(self, batch, step):
+            result = super().eval_step(batch, step)
+            if isinstance(result, (list, tuple)) and len(result) >= 2:
+                loss_dict = result[1]
+                if isinstance(loss_dict, dict):
+                    eval_loss = loss_dict.get("loss") or loss_dict.get("avg_loss")
+                    if eval_loss is not None:
+                        emit({
+                            "epoch": self.epochs_done,
+                            "step": _state["step"],
+                            "eval_loss": float(eval_loss),
+                        })
             return result
 
         def save_best_model(self):
