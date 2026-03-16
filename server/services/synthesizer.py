@@ -140,7 +140,9 @@ def synthesize(
                 speed=speed,
             )
 
-        wav = outputs.get("wav") or outputs.get("audio")
+        wav = outputs.get("wav")
+        if wav is None:
+            wav = outputs.get("audio")
         if wav is None:
             raise RuntimeError("Model returned no audio output")
 
