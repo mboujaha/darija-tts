@@ -208,7 +208,6 @@ def run(config: dict):
             "last_epoch": -1,
         },
         test_sentences=[],
-        start_with_eval=False,
     )
 
     # --- Load samples ---
