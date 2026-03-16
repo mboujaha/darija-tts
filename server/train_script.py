@@ -42,7 +42,7 @@ def run(config: dict):
     output_dir = config["output_dir"]
     run_id = config["run_id"]
     epochs = int(config.get("epochs", 10))
-    batch_size = int(config.get("batch_size", 2))
+    batch_size = min(int(config.get("batch_size", 2)), 1)  # fp32 on T4: max batch=1
     grad_accum = int(config.get("grad_accumulation", 8))
     lr = float(config.get("learning_rate", 5e-6))
     training_type = config.get("training_type", "full")
@@ -208,7 +208,6 @@ def run(config: dict):
         save_n_checkpoints=2,
         save_checkpoints=True,
         print_eval=False,
-        mixed_precision=True,
         optimizer="AdamW",
         optimizer_wd_only_on_weights=True,
         optimizer_params={"betas": [0.9, 0.96], "eps": 1e-8, "weight_decay": 1e-2},
