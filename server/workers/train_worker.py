@@ -44,7 +44,7 @@ async def run_train_job(job_id: str, run_id: str, config: dict):
         # Broadcast log line
         asyncio.run_coroutine_threadsafe(
             _broadcast_log(job_id, line), loop
-        ).result(timeout=2)
+        ).result(timeout=30)
 
         # Broadcast job progress
         progress = round(epoch / total_epochs, 4) if total_epochs > 0 else 0.0
@@ -55,7 +55,7 @@ async def run_train_job(job_id: str, run_id: str, config: dict):
 
         asyncio.run_coroutine_threadsafe(
             _broadcast_job_update(job_id, "running", progress, msg), loop
-        ).result(timeout=2)
+        ).result(timeout=30)
 
         # Persist to DB periodically
         if step - _last_db_step[0] >= DB_UPDATE_EVERY:
@@ -69,16 +69,16 @@ async def run_train_job(job_id: str, run_id: str, config: dict):
                 update_kwargs["current_loss"] = train_loss
             asyncio.run_coroutine_threadsafe(
                 db.update_training_run(run_id, **update_kwargs), loop
-            ).result(timeout=2)
+            ).result(timeout=30)
 
             if train_loss is not None or eval_loss is not None:
                 asyncio.run_coroutine_threadsafe(
                     db.add_loss_entry(run_id, step, epoch, train_loss, eval_loss), loop
-                ).result(timeout=2)
+                ).result(timeout=30)
 
             asyncio.run_coroutine_threadsafe(
                 db.update_job(job_id, status="running", progress=progress, message=msg), loop
-            ).result(timeout=2)
+            ).result(timeout=30)
 
     try:
         result = await loop.run_in_executor(
