@@ -106,6 +106,8 @@ CREATE TABLE IF NOT EXISTS loss_history (
 
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("PRAGMA journal_mode=WAL")
+        await db.execute("PRAGMA busy_timeout=10000")
         for statement in CREATE_TABLES_SQL.split(";"):
             stmt = statement.strip()
             if stmt:

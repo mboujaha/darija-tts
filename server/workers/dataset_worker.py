@@ -54,20 +54,20 @@ async def run_dataset_job(job_id: str, dialect: str | None, config: dict):
             # Broadcast log line
             asyncio.run_coroutine_threadsafe(
                 _broadcast_log(job_id, line), loop
-            ).result(timeout=1)
+            ).result(timeout=30)
             # Broadcast progress update
             if total_clips > 0:
                 progress = round(done / total_clips, 4)
                 msg = f"{done}/{total_clips} clips copied"
                 asyncio.run_coroutine_threadsafe(
                     _broadcast_job_update(job_id, "running", progress, msg), loop
-                ).result(timeout=1)
+                ).result(timeout=30)
                 # Update DB less frequently (every 10%)
                 if done % max(1, total_clips // 10) == 0:
                     asyncio.run_coroutine_threadsafe(
                         db.update_job(job_id, status="running", progress=progress, message=msg),
                         loop,
-                    ).result(timeout=1)
+                    ).result(timeout=30)
 
         stats = await loop.run_in_executor(
             None,
